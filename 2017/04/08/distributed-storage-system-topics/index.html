@@ -1,0 +1,782 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="storage," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="数据的可靠性是任何一个存储系统的第一要务，之后才是根据实际业务场景提供相应的接口和服务。单机系统上，数据的可靠性主要依赖于底层硬件设施，除了存储设备本身的可靠性，通常还搭配RAID技术作为冗余方案。分布式系统面临的问题则要复杂得多。借鉴至RAID技术，有副本，纠删码等冗余方案，可以保证数据的可靠性，但同时也引入了新的问题：系统可用性和数据一致性。CAP理论（有一定的适用场景）指出，一致性（C），可">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式存储系统设计的几个问题和考虑点">
+<meta property="og:url" content="http://xupifu.github.io/2017/04/08/distributed-storage-system-topics/index.html">
+<meta property="og:site_name" content="蚍蜉小分队">
+<meta property="og:description" content="数据的可靠性是任何一个存储系统的第一要务，之后才是根据实际业务场景提供相应的接口和服务。单机系统上，数据的可靠性主要依赖于底层硬件设施，除了存储设备本身的可靠性，通常还搭配RAID技术作为冗余方案。分布式系统面临的问题则要复杂得多。借鉴至RAID技术，有副本，纠删码等冗余方案，可以保证数据的可靠性，但同时也引入了新的问题：系统可用性和数据一致性。CAP理论（有一定的适用场景）指出，一致性（C），可">
+<meta property="og:updated_time" content="2017-04-20T03:31:20.353Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="分布式存储系统设计的几个问题和考虑点">
+<meta name="twitter:description" content="数据的可靠性是任何一个存储系统的第一要务，之后才是根据实际业务场景提供相应的接口和服务。单机系统上，数据的可靠性主要依赖于底层硬件设施，除了存储设备本身的可靠性，通常还搭配RAID技术作为冗余方案。分布式系统面临的问题则要复杂得多。借鉴至RAID技术，有副本，纠删码等冗余方案，可以保证数据的可靠性，但同时也引入了新的问题：系统可用性和数据一致性。CAP理论（有一定的适用场景）指出，一致性（C），可">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://xupifu.github.io/2017/04/08/distributed-storage-system-topics/"/>
+
+
+
+
+
+  <title> 分布式存储系统设计的几个问题和考虑点 | 蚍蜉小分队 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">蚍蜉小分队</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-storage">
+          <a href="/categories/storage" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            存储技术
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://xupifu.github.io/2017/04/08/distributed-storage-system-topics/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="蚍蜉">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="蚍蜉小分队">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="蚍蜉小分队" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                分布式存储系统设计的几个问题和考虑点
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-04-08T11:00:45+08:00">
+                2017-04-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/storage/" itemprop="url" rel="index">
+                    <span itemprop="name">storage</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>数据的可靠性是任何一个存储系统的第一要务，之后才是根据实际业务场景提供相应的接口和服务。单机系统上，数据的可靠性主要依赖于底层硬件设施，除了存储设备本身的可靠性，通常还搭配RAID技术作为冗余方案。分布式系统面临的问题则要复杂得多。借鉴至RAID技术，有副本，纠删码等冗余方案，可以保证数据的可靠性，但同时也引入了新的问题：系统可用性和数据一致性。CAP理论（有一定的适用场景）指出，一致性（C），可用性（A）和分区问题（P），三者无法同时保证，而一般认为，P是不可避免的，这就意味着一致性和可用性这两个目标是互相冲突的。可以看到，分布式系统的复杂主要就在于检测和处理各种故障问题，还需要权衡系统的可用性和数据的一致性。在此基础上才考虑扩容，服务等级，安全等问题。</p>
+<a id="more"></a>
+<p>本文介绍分布式存储系统设计中的几个主要问题和考虑点，会提及一些算法和策略，但不做展开，感兴趣可自行查阅相关文章，或等待后续文章补充。</p>
+<p>原创文章版权归原作者所有，商业转载请联系原作者获取授权，任何转载请注明来源：<a href="https://xupifu.github.io/2017/04/08/distributed-storage-system-topics/">https://xupifu.github.io/2017/04/08/distributed-storage-system-topics/</a></p>
+<h2 id="1-业务场景"><a href="#1-业务场景" class="headerlink" title="1 业务场景"></a>1 业务场景</h2><p>目前，流行的存储业务需求主要可归类成三种：</p>
+<ul>
+<li><strong>块存储</strong>：Block Storage，提供Linux的块设备接口，Qemu的块驱动接口，云硬盘接口等，实际使用时，性能方面重点关注的是时延</li>
+<li><strong>对象存储</strong>：Object Storage，提供键值（Key-Value）接口，如GET，PUT，DEL等，案例如Swift，S3等，性能方面重点关注吞吐量</li>
+<li><strong>文件存储</strong>：File Storage，提供POSIX文件系统或自定义的文件系统服务，支持目录及文件属性等功能，案例如GFS，HDFS，CephFS等</li>
+</ul>
+<p>存储业务的性能需求，一般可通过数据的冷热，快慢，大小进行考虑，不同业务通常都对应不同的性能要求。</p>
+<p>分布式存储对于单节点的底层存储要求，跟以上的业务需求类似。目前大部分都<strong>基于现有的本地成熟文件系统</strong>，小部分则是<strong>基于块设备</strong>，去掉了文件系统支持，自行管理存储空间，还有一种，目前最少，它要求<strong>底层硬件直接提供键值接口</strong>。</p>
+<p>通常，一个系统都只满足其中的一项需求，这也是类Unix系统的一个基本设计理念：程序应该小而专一。如何使用和组合由用户自行完成，当然，这也带来了一定的运维成本。有些分布式存储，则提供多种，比如Ceph，同时提供这三种服务。Ceph架构中最核心的部件实际只有一个：RADOS，一切对象化，然后对上提供各类服务的接口。这也是Ceph所提的<strong>统一存储</strong>的概念。这一定程度上也满足了类Unix的设计理念。当然，实际应用中，同时需要使用多种业务的场景可能不见得有太多，而且Ceph本身还没完全适应生产环境，这也是目前专用系统依然使用比较广泛的原因之一。</p>
+<h2 id="2-中心化-vs-去中心化"><a href="#2-中心化-vs-去中心化" class="headerlink" title="2 中心化 vs 去中心化"></a>2 中心化 vs 去中心化</h2><p>任何一个分布式系统都需要中心化管理，因此所谓的去中心化，要点就在于中心点承担的职责大小，而这里面最主要的一个职责就是元数据的管理，而最主要的元数据莫过于数据和位置的映射关系。传统的中心点都需要维护数据和位置的映射关系，读写访问都需要经过中心点进行统一调度，中心点的性能瓶颈，可用性，可靠性，伸缩性等方面如何保障，都面临极大的挑战。而现在的去中心化，则无需维护数据和位置的映射，客户端通过算法计算即可获得相应映射关系，之后到相应节点直接进行访问即可，中心点职责被大幅减弱。由此可见，是否去中心化的一个重要标准为：<strong>是否维护数据和位置的映射关系</strong>。</p>
+<p>去中心化后，无需维护数据和位置的映射关系，并不意味着没有了映射关系，而是采用算法固定了映射关系。同时，为了保证可靠性，一般还使用<strong>数据冗余</strong>技术，如副本（Replica），纠删码（EC）。算法本身则确保数据分布的<strong>均衡</strong>程度。但是，一旦节点发生增删（如扩容，故障），即用于算法计算的输入条件发生了变化，部分映射关系就发生了变化，即数据需要迁移。当然，迁移一般在系统内部自主完成，如Ceph所提供的自管理/自恢复特性。一般，去中心化的系统都会假定故障是一个常态化事件，这是就需要重点评估迁移效率以及造成的影响。比如Ceph在实际使用过程中，最难处理的部分就是数据迁移以及其带来的影响。</p>
+<p>去中心化，一定程度上也意味着各自为政，需要统一管理的部分，比如统计分析，数据跟踪，权限控制，服务等级管理等，就变得比较复杂。在数据迁移方面，中心化因为有统一管理的信息，只需恢复故障部分的数据即可，而去中心化的系统，由于映射关系的变化，将导致一些非故障数据也可能需要迁移。比如将集群规模扩大一倍，为了<strong>重均衡</strong>，理论上就有一半数据需要迁移，而中心化系统就没有此类问题。</p>
+<p>去中心化系统是使用算法来确保数据分布的均衡度的，这在数据量较小的情况下体现并不明显，性能方面也同样，在集群规模较小的情况下，去中心化的系统所宣称的高性能实际上无法体现，甚至可能更差。</p>
+<p>可以看到，两者之间的主要优缺点：</p>
+<ul>
+<li>中心化：能够统一调度控制，故障处理和恢复比较容易，可维护性高，但性能瓶颈，单点故障问题以及扩展能力等方面需要着重考虑</li>
+<li>去中心化：能够提供较高数据访问能力，没有单点问题，扩展能力出色，且规模越大，性能表现越好，但其故障处理比较复杂，可维护性也存在挑战</li>
+</ul>
+<p>中心化和去中心化有各自的优势和不足，设计时应根据业务需求进行选择。</p>
+<h2 id="3-数据冗余"><a href="#3-数据冗余" class="headerlink" title="3 数据冗余"></a>3 数据冗余</h2><p>分布式系统都是由多个节点组成的，规模越大，异常状况越可能发生，比如网络异常，硬盘故障，宕机等。为了保证系统的可靠性和可用性，分布式系统必须使用<strong>副本</strong>来提高可用性，以降低异常状况带来的影响。当然，其中的读写过程都是在分布式系统内部完成的，对用户透明。但是，这也带来了新的问题：多个副本之间的一致性问题。最简单的策略是：写时要求全部副本写完才返回，读则随意读取一份即可。当写比较多时，这种方式将导致响应时间极大增加，更极端的情况，如果此时某个副本节点异常了，等待可能就是无限期的，可用性问题依然存在。为了更进一步的解决该问题，基于Quorum投票的冗余算法就被提出。</p>
+<h3 id="3-1-Quorum-NWR"><a href="#3-1-Quorum-NWR" class="headerlink" title="3.1 Quorum/NWR"></a>3.1 Quorum/NWR</h3><ul>
+<li>N：副本总数</li>
+<li>W：写要返回时，需保证成功的最少副本数</li>
+<li>R：读时，需读取的最少副本数</li>
+</ul>
+<p>有两条准则必须保证：</p>
+<ul>
+<li>W &gt; N/2：最小写副本需达到半数以上</li>
+<li>W+R &gt; N：也为R &gt; N-W，可能未写入的最大副本数为N-W，只要读取的副本数大于该数，即可保证至少有一份最新副本</li>
+</ul>
+<p>每个副本都需要有版本号，用来区分副本的新旧情况。同时，还需要有类似心跳检测的协议（比如，租约lease），以便知道副本所在节点的健康状态，防止无限期等待。</p>
+<p>NWR一般是通过设置来完成的，常见的设置有N3-W2-R2，对一致性的要求比较高，而N3-W2-R1则对读一致性要求不高，还存在W1的情况，只需写入一个即可返回，性能最好，但一致性保证最差。如何设置则取决于实际的业务需求。</p>
+<p>不管什么样的设置，分布式系统中最复杂的还是容错处理，在某些节点出现异常的时候，以上策略如何进行重新适应就是问题。比如：</p>
+<ul>
+<li>N3-W2-R2：写入时，一个成功，两个失败，整体应是返回失败，写入成功的副本必须经过处理，否则读时（读两份副本），一定概率会读到那份写入成功的数据，但实际该份数据为脏数据，理论上应该丢弃</li>
+<li>N3-W3-R1：写入时，两个成功，另一个已实际写入成功，但因网络问题，超时返回失败，此时整体应为失败，数据需要回滚，这时需要警惕原超时的节点重新加入的处理，否则可能读取新数据，而实际上是脏数据</li>
+<li>后台校验：有时也称为<strong>数据清洗</strong>，结合日志系统，用于清除脏数据</li>
+<li>写并发：多个写并发进行时，如果此时出现异常，则回滚可能会变得非常复杂</li>
+</ul>
+<p>Amazon的Dynamo，Swift等系统就使用了NWR策略。</p>
+<h3 id="3-2-Replica"><a href="#3-2-Replica" class="headerlink" title="3.2 Replica"></a>3.2 Replica</h3><p>无论W和R是什么样的设置，N一般都为3，即所谓的<strong>三副本</strong>，这种数据冗余方式的存储成本也比较高，即要存储1TB数据，实际需使用3TB空间。在副本复制方面，一般有同步复制和异步复制之分，NWR算法中两者是同时被使用的，即W的部分要求同步写入，剩余的N-W部分采用异步方式写入。从用户角度看，异步方式比较友好，但内部的一致性则需要额外的工作来保证。另外，从角色上看，还有主从副本（主从服务器，也称为primary-secondary协议）之分。NWR算法并没有规定副本之间的角色定位，通常认为是平等的，并发情况下的复杂度也因此增大。主从副本，则以依次传递的方式进行拷贝，即：所有的写都需经过主副本，主副本完成后，再传递至从副本，从副本的写可以是异步的。如果主副本发生异常了，则从其他副本中选取一个作为主副本（选举协议），当然，在切换过程中可能会存在一定的异常时间窗口。</p>
+<p>Ceph采用的是类似主从副本的方式，复制方式则是同步+异步组合使用，它并没有采用严格的NWR算法实现，不过依然采用了三副本的数据冗余方式。数据的一致性，则是通过内部的自管理和数据清洗来完成。</p>
+<h3 id="3-3-RAID"><a href="#3-3-RAID" class="headerlink" title="3.3 RAID"></a>3.3 RAID</h3><p>由于分布式存储技术中的很多策略都与RAID技术有类似相通的地方，比如Striping条带化，副本，以及后文的EC纠删码，故本节简略介绍一下RAID技术。RAID，Redundant Array of Independent Disk，独立冗余磁盘阵列，根据配置可实现数据冗余和提高性能的目的。常见配置如下：</p>
+<ul>
+<li><strong>RAID0</strong>：Striping数据到多块硬盘上，即一份数据被拆成多份同时写到硬盘上，可显著提高性能，由于没有冗余，可靠性最差，空间利用率100%</li>
+<li><strong>RAID1</strong>：Mirror镜像方式，与上文提及的副本类似，即一份数据需要写到两块硬盘上，不进行Striping，可靠性最好，但性能最差，空间利用率50%</li>
+<li><strong>RAID5</strong>：增加一块校验盘，其余硬盘采用Striping方式写入，是RAID0和RAID1的折衷方案，各方面兼顾较好，空间利用率为(N-1)/N</li>
+<li><strong>RAID10</strong>：RAID1+RAID0的组合，实现上，将硬盘分组，组内使用RAID1镜像，组间则使用RAID0的Striping，结合了RAID0和RAID1的优点，空间利用率50%</li>
+</ul>
+<p>在分布式存储系统中，RAID技术在某种程度上将被取代（实际上是在软件层面上实现了RAID的功能），但分布式存储系统更具优势，比如，在可靠性方面，允许多个节点故障；数据重建方面，无需停机，多个节点可以同时参与恢复，性能也大大提升。比如Ceph系统，甚至建议取消RAID，原因是Ceph的自恢复特性（多副本/EC+自管理），已经使得RAID变得无关紧要。</p>
+<h3 id="3-4-EC"><a href="#3-4-EC" class="headerlink" title="3.4 EC"></a>3.4 EC</h3><p>将数据拆分成一个个对象，并存储到不同节点上，从而实现Striping，这相当于RAID0，而多副本的冗余策略则相当于RAID1。另一种冗余技术，EC（Erasure-Coding），一般译为纠删码，则与RAID5类似，能够较大的利用存储空间，降低存储成本。但缺点也显而易见：冗余码的计算是通过软件实现的，效率相对低下。实际使用时，一般采用冷热分层策略，对于较热的数据，重点考虑其性能，故采用多副本方式；而对于冷数据，则重点考虑存储成本，故采用EC方式提高空间利用率。</p>
+<h2 id="4-数据分布和重均衡"><a href="#4-数据分布和重均衡" class="headerlink" title="4 数据分布和重均衡"></a>4 数据分布和重均衡</h2><p>一般情况下，分布式系统都会考虑节点之间的数据分布均衡情况，在整个系统集群健康的情况下，有很多算法都能协助达到该目标，比如<strong>一致性哈希</strong>，<strong>CRUSH算法</strong>等。但是，分布式系统中，节点故障是常见的事件，也就是说集群的拓扑情况可能会经常发生变化，加上系统扩容等因素，节点数量总会发生增减。这种情况下，为了达到再均衡的状态，系统内部就可能需要做数据迁移，这个过程就称为<strong>重均衡</strong>（Re-balancing）。理想的状态是数据迁移量越少越好。比如新节点加入时，数据只从旧节点流向新节点，旧节点之间没有数据流动。</p>
+<p>任何一个数据分布算法的目标都是一致的，都需要考虑如下因素：</p>
+<ul>
+<li><strong>均衡分布</strong>：数据尽可能均衡的分布在各个节点上，尽量避免过于空闲或过于繁忙的节点出现</li>
+<li><strong>节点增减</strong>：节点加入或离开时引起的数据迁移量应尽可能小</li>
+<li><strong>容错能力</strong>：数据副本应该分散在不同的故障域，充分降低数据丢失的风险</li>
+</ul>
+<p>中心化系统相对比较容易做，节点减少时，只需将节点上的数据按一定规则分布到现有节点上即可；增加节点时则只需决定哪些数据要放到新节点上，甚至不做任何迁移，仅加大该节点后续的负载程度，也能达到最终的负载均衡。</p>
+<p>在去中心化的系统中，重均衡就相对比较复杂，甚至可能会出现一些无意义的数据迁移。由于数据分布直接取决于算法，而算法又和集群的拓扑情况紧密相关，拓扑一发生变化，数据分布也需要随着发生变化。比如，一般的一致性哈希算法，节点（对应token）和数据都采用相同的计算方式，数据则放置离它最近（比较计算后的值）的下一个节点上，一旦某个节点发生故障，只需将原故障节点中的数据转移到下一个节点即可，影响相对较小，但下一个节点在一定时间内会出现较大的负载压力。CRUSH算法影响的节点范围，相对一致性哈希算法会大一些，这也直接导致需要迁移的数据（包括本来不受影响的）量，也会比较大。</p>
+<h2 id="5-监测"><a href="#5-监测" class="headerlink" title="5 监测"></a>5 监测</h2><p>以上介绍了一些降低故障影响以及故障恢复的策略，比如数据冗余，数据重均衡等，但故障是否发生，即故障检测，是后续处理的关键。对于具有自管理和自恢复的系统，怎么<strong>合理判断</strong>故障发生了，更是重要。常见的故障包括系统宕机，硬盘故障，网络异常等，其中网络异常的判断尤为困难，丢包或短时间内的网络异常，是常见的情况。简单粗暴的判断此类网络异常为故障，将可能导致系统内数据迁移不断发生，并最终影响整系统的可用性。</p>
+<p>一般情况下，会设置一些监测节点，用于收集节点相关信息，其中就包括节点的健康状态，该过程称为<strong>心跳检测</strong>。心跳检测一般有<strong>超时</strong>（Timeout）和<strong>租约</strong>（Lease）等策略，其中，租约策略是目前比较常用的策略。</p>
+<p>除了健康状态信息外，其他的节点信息，通常可作为统计，分析，调度和决策等用途。</p>
+<h2 id="6-小结"><a href="#6-小结" class="headerlink" title="6 小结"></a>6 小结</h2><p>以上主题都可以对应到分布式存储系统的几个关键考量点上：</p>
+<ul>
+<li><strong>可靠性</strong>：数据不能丢失，这是所有存储系统的第一要务。理论上，数据丢失的概率始终是存在的，故系统需具备容错能力，以应对各种故障问题，尽可能降低数据丢失的风险</li>
+<li><strong>可用性</strong>：在规定时间内持续提供服务，容错能力是保证该特性的主要技术手段，性能要求方面可采用多节点等方案来提高</li>
+<li><strong>一致性</strong>：总能访问到最新数据。由于多节点的存在，数据副本之间如何保持一致就是个问题。可以看到，一致性和可用性这两个目标是存在冲突的（详见<strong>CAP理论</strong>）</li>
+<li><strong>伸缩性</strong>：也称为扩展性，主要指增减节点的难易程度，通常指的是扩容的情况</li>
+<li><strong>性能</strong>：可认为是可用性的一个要求，如果系统无法提供相当的性能，则可视为不满足可用性要求</li>
+</ul>
+<p>其他的一些重要特性，如安全，服务等级（QoS）等，不在此讨论。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/storage/" rel="tag"># storage</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/03/20/data-interchange-format/" rel="next" title="数据交换 - XML, JSON, ProtoBuf">
+                <i class="fa fa-chevron-left"></i> 数据交换 - XML, JSON, ProtoBuf
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/20/numa-issue/" rel="prev" title="NUMA架构使用中的问题">
+                NUMA架构使用中的问题 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="蚍蜉" />
+          <p class="site-author-name" itemprop="name">蚍蜉</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-业务场景"><span class="nav-text">1 业务场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-中心化-vs-去中心化"><span class="nav-text">2 中心化 vs 去中心化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-数据冗余"><span class="nav-text">3 数据冗余</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Quorum-NWR"><span class="nav-text">3.1 Quorum/NWR</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-Replica"><span class="nav-text">3.2 Replica</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-RAID"><span class="nav-text">3.3 RAID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-EC"><span class="nav-text">3.4 EC</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-数据分布和重均衡"><span class="nav-text">4 数据分布和重均衡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-监测"><span class="nav-text">5 监测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-小结"><span class="nav-text">6 小结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017 - 至今 </span>
+  <span class="author" itemprop="copyrightHolder">版权所有，任何转载请注明来源，商业转载请联系作者 [蚍蜉] </span>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>

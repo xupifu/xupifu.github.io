@@ -1,0 +1,1049 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="cache," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="为了弥补各层次存储设备之间的性能差距，缓存，在局部性原理的基础上，成为了提高系统性能的一个重要技术手段。CPU缓存就是一个非常有效的技术实现，从中，我们可以看到，缓存实现时的基本要素，比如缓存的映射方式，回写策略，替换策略，缓存一致性等。随着计算机技术的发展，缓存已经不局限于硬件实现了，在软件层的实现越来越多，作用也越来越大。在CPU缓存的实现基础上，我们从软件层的角度出发，梳理出了缓存的基本模型">
+<meta property="og:type" content="article">
+<meta property="og:title" content="缓存技术及算法策略简介">
+<meta property="og:url" content="http://xupifu.github.io/2017/01/19/cache-introduction/index.html">
+<meta property="og:site_name" content="蚍蜉小分队">
+<meta property="og:description" content="为了弥补各层次存储设备之间的性能差距，缓存，在局部性原理的基础上，成为了提高系统性能的一个重要技术手段。CPU缓存就是一个非常有效的技术实现，从中，我们可以看到，缓存实现时的基本要素，比如缓存的映射方式，回写策略，替换策略，缓存一致性等。随着计算机技术的发展，缓存已经不局限于硬件实现了，在软件层的实现越来越多，作用也越来越大。在CPU缓存的实现基础上，我们从软件层的角度出发，梳理出了缓存的基本模型">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-associative.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-model.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-arch.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-hashing.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-linuxio.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-memcached.png">
+<meta property="og:image" content="https://xupifu.github.io/assets/cache-stampede.png">
+<meta property="og:updated_time" content="2017-04-20T03:32:03.971Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="缓存技术及算法策略简介">
+<meta name="twitter:description" content="为了弥补各层次存储设备之间的性能差距，缓存，在局部性原理的基础上，成为了提高系统性能的一个重要技术手段。CPU缓存就是一个非常有效的技术实现，从中，我们可以看到，缓存实现时的基本要素，比如缓存的映射方式，回写策略，替换策略，缓存一致性等。随着计算机技术的发展，缓存已经不局限于硬件实现了，在软件层的实现越来越多，作用也越来越大。在CPU缓存的实现基础上，我们从软件层的角度出发，梳理出了缓存的基本模型">
+<meta name="twitter:image" content="https://xupifu.github.io/assets/cache-associative.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://xupifu.github.io/2017/01/19/cache-introduction/"/>
+
+
+
+
+
+  <title> 缓存技术及算法策略简介 | 蚍蜉小分队 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">蚍蜉小分队</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-storage">
+          <a href="/categories/storage" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            存储技术
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://xupifu.github.io/2017/01/19/cache-introduction/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="蚍蜉">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="蚍蜉小分队">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="蚍蜉小分队" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                缓存技术及算法策略简介
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-01-19T21:32:37+08:00">
+                2017-01-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/storage/" itemprop="url" rel="index">
+                    <span itemprop="name">storage</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>为了弥补各层次存储设备之间的性能差距，缓存，在局部性原理的基础上，成为了提高系统性能的一个重要技术手段。CPU缓存就是一个非常有效的技术实现，从中，我们可以看到，缓存实现时的基本要素，比如缓存的映射方式，回写策略，替换策略，缓存一致性等。随着计算机技术的发展，缓存已经不局限于硬件实现了，在软件层的实现越来越多，作用也越来越大。在CPU缓存的实现基础上，我们从软件层的角度出发，梳理出了缓存的基本模型和缓存的一些基本架构，并且探讨了用于实现缓存设计的常见算法和策略。现实例子也非常丰富，从单机缓存系统到分布式缓存系统，我们可以看到缓存的基本要素是如何具体实现的，但同时，我们也看到了缓存设计时的一些常见问题和思考，比如缓存系统的性能问题，更新策略，缓存穿透和失效等。</p>
+<a id="more"></a>
+<p>原创文章版权归原作者所有，商业转载请联系原作者获取授权，任何转载请注明来源：<a href="https://xupifu.github.io/2017/01/19/cache-introduction/">https://xupifu.github.io/2017/01/19/cache-introduction/</a></p>
+<h2 id="1-缓存概念"><a href="#1-缓存概念" class="headerlink" title="1. 缓存概念"></a>1. 缓存概念</h2><p>由于工艺和技术等原因，各级存储设备之间都存在一定的速度差异，缓存技术根据局部性原理，成为了调节这种速度差异的有效手段，本文将介绍缓存的基本概念和常见策略，为后续介绍软件层的缓存技术做好铺垫。</p>
+<h3 id="1-1-基本定义"><a href="#1-1-基本定义" class="headerlink" title="1.1 基本定义"></a>1.1 基本定义</h3><p><strong>维基百科对Cache的定义</strong>:</p>
+<blockquote>
+<p>In computing, a <code>cache</code> /ˈkæʃ/ KASH, is a hardware or software component that stores data so future requests for that data can be served faster; the data stored in a cache might be the result of an earlier computation, or the duplicate of data stored elsewhere. A <code>cache hit</code> occurs when the requested data can be found in a cache, while a <code>cache miss</code> occurs when it cannot. Cache hits are served by reading data from the cache, which is faster than recomputing a result or reading from a slower data store; thus, the more requests can be served from the cache, the faster the system performs.</p>
+<p>To be cost-effective and to enable efficient use of data, caches are relatively small. Nevertheless, caches have proven themselves in many areas of computing because access patterns in typical computer applications exhibit the <code>locality of reference</code>. Moreover, access patterns exhibit <code>temporal locality</code> if data is requested again that has been recently requested already, while <code>spatial locality</code> refers to requests for data physically stored close to data that has been already requested.</p>
+</blockquote>
+<p>Cache无论是作为硬件部件还是软件部件，都基于一个基本原理：<strong>访问的局部性原理</strong>（locality of reference）。一个相对较小的cache，一个相对较小的cache，就能够弥补各级存储设备之间的<strong>速度差异</strong>，从而加速系统性能。用来衡量cache系统的关键指标为<strong>cache命中率</strong>和<strong>命中性能</strong>。</p>
+<blockquote>
+<p><strong>Buffer vs Cache</strong></p>
+<p>理论上，在速度上存在较大差异的设备间都可以利用Buffer/Cache进行速度的匹配调节。早期，Buffer（译为缓冲），通常是为了平衡内存和IO设备（如硬盘）之间的速度差异，而Cache（译为缓存），通常是为了平衡CPU和内存之间的速度差异。但无论早期，还是现在，这两个概念都经常存在不同理解（差别是存在的）。本文不做概念之争，统一称为Cache。</p>
+</blockquote>
+<p>局部性原理包括：</p>
+<ul>
+<li><strong>时间局部性</strong>（temporal locality）：数据将被多次访问</li>
+<li><strong>空间局部性</strong>（spatial locality）：邻近数据将被访问</li>
+</ul>
+<p>基于局部性原理，缓存在设计上，存在许多需要考虑的因素，这些因素将在本序列文章中逐步展开，这里仅作列举：</p>
+<ul>
+<li>缓存关联性（cache associativity）</li>
+<li>写策略（writing policy）</li>
+<li>替换策略（cache replacement）</li>
+<li>缓存一致性（cache coherency）</li>
+<li>cache失效可能引发的dog-piling效应（cache stampede）</li>
+<li>…</li>
+</ul>
+<h3 id="1-2-缓存的由来"><a href="#1-2-缓存的由来" class="headerlink" title="1.2 缓存的由来"></a>1.2 缓存的由来</h3><p>计算机通常可以抽象为三大部分：计算，传输和存储，而存储层次一般又可以分为三级：<strong>CPU相关存储</strong>，<strong>主存储器</strong>（内存）和<strong>辅助存储器</strong>（外存）。各级性能从高到低，成本从昂贵到便宜，容量从小到大。由于具体设备在实现上可能存在较大的性能差异，并且技术和工艺也在不断发展，实际应用中，各级之间可能会插入更多分层。衡量一个存储系统的指标通常包括吞吐量和访问延迟，两者存在一定的矛盾，一般需要根据系统要求进行权衡。</p>
+<ul>
+<li><p><strong>CPU相关存储</strong></p>
+<ul>
+<li><strong>寄存器</strong>：通常由体系结构定义。</li>
+<li><strong>CPU缓存</strong>：CPU的计算速度和内存的访问速度差距通常能达到几十倍，由于工艺限制，这种差距不仅没有缩小，还在不断扩大。根据分析及程序设计规则限定，指令执行和数据访问均存在局部性，这也是Cache的提出的基本依据。基于此，如果能够在CPU和内存之间增加较为快速的介质作为缓存（同时考虑性价比），就能够更加有效的利用CPU。L1，L2，L3等就是这样的实现，统称为CPU缓存，指令和数据一般都对应有自己的缓存。</li>
+<li><strong>TLB</strong>：Translation Lookaside Buffer，用于页表项的缓存。</li>
+</ul>
+</li>
+<li><p><strong>主存储器</strong></p>
+<ul>
+<li><strong>RAM</strong>：CPU可随机访问的存储，也称为内存，用于存放指令和数据。实际物理设备形式有SD-RAM，DRAM等，一般为易失性存储。</li>
+<li><strong>NVDIMM</strong>：混合内存，基于RAM和闪存介质，也是用于存放指令和数据。由于闪存具有非易失性的特点，NVDIMM理论上可成为非易失性存储。</li>
+</ul>
+</li>
+<li><p><strong>辅助存储器</strong></p>
+<ul>
+<li><strong>闪存设备</strong>：基于闪存介质，有SATA SSD，PCI-E NVMe设备等，相比传统磁盘设备，性能上存在较大优势，可随机访问。有些NVMe设备的性能甚至已经与内存相当。</li>
+<li><strong>本地存储</strong>：一般指传统的磁盘设备，磁盘阵列等，访问需要寻道操作，性能一般。在嵌入式设备中一般指基于闪存的ROM。</li>
+<li><strong>远端存储</strong>：比如磁带（Tape），光盘，主要作为备份用，性能较低。还有网络存储（NAS等），分布式存储等，可用于业务数据存储访问，由于需要跨越网络，性能也较低。</li>
+</ul>
+</li>
+</ul>
+<p>在典型的应用中，客户端计算机的一次访问，通常需要经过本地的各级存储，通过网络穿越各级CDN，各类远端存储服务器，最后到达数据中心。形象一些，以读书为例：现在正在读的书，捧在手里（寄存器）。最近频繁阅读的书，放在书桌上（缓存），随时取来读。当然书桌上只能放有限几本书，更多的书在书架上（主存储器）。如果书架上没有，就去书店或图书馆（辅助存储器）。</p>
+<p>通过以上描述，可能大家对各级的性能差异还是没有一个直观的感受，这里假设寄存器的存取性能为1秒，那么：</p>
+<ul>
+<li>寄存器：秒级别</li>
+<li>CPU缓存：秒级别</li>
+<li>内存：分钟级别</li>
+<li>SSD：小时-天级别</li>
+<li>外存：月-年级别</li>
+</ul>
+<p>可见各级之间的还是存在较大差距的，而Cache的概念便是为此而生的，结合局部性原理，低一级的设备可以把热点数据放在高一级设备中，依此类推，便能够缓解各级设备之间的速度差异，从而提高整体系统性能。</p>
+<h3 id="1-3-缓存基本要素"><a href="#1-3-缓存基本要素" class="headerlink" title="1.3 缓存基本要素"></a>1.3 缓存基本要素</h3><p>一般情况下，缓存有<strong>命中</strong>（hit），<strong>缺失</strong>（miss），<strong>替换</strong>（replace）等基本操作，而这些操作均基于缓存的组织形式，即较小的缓存空间与较大的内存之间如何关联映射（称为<strong>缓存的关联性</strong>，cache associativity）。通常的做法是定义一个<strong>最小缓存单元</strong>（称为cache line），多个cache line组成一个缓存空间，<strong>映射策略</strong>则基于内存地址进行制定，一般有：</p>
+<ul>
+<li><strong>直接映射</strong>（Direct Mapped）：一个内存地址的数据只能缓存到一个固定的cache line上。为减少冲突，提高命中率，要求对内存的访问需比较平均，但实际很少有这样的使用场景。</li>
+<li><strong>全相联</strong>（Fully Associative）：任何一个内存地址的数据可缓存到任意cache line上，搜索效率可能会受限。适用于小容量的缓存空间或对效率要求不高的场景（软件层可能不同）。</li>
+<li><strong>组相联</strong>（N-Way Associative）：按<strong>组</strong>（Set）等分缓存空间，一个内存地址唯一确定一个组，数据则可以缓存到组内的任意cache line。为以上两种的组合，是通常使用的策略。</li>
+</ul>
+<p><img src="https://xupifu.github.io/assets/cache-associative.png" alt="图：Cache映射策略"></p>
+<p>各种相联策略中，均存在如何解决冲突以及提高命中率的问题。程序设计上，应尽量避免数据跨越两条cache line，即<strong>非对齐访问</strong>（unaligned access）。而如果希望多个数据都能够被缓存，就需要根据不同映射策略，将数据尽量分散在不同cache line上。比如，Linux内核中的slab实现就采用了<strong>着色</strong>（cache coloring）来辅助实现数据的分散。</p>
+<p>如何保证命中率，还与<strong>替换策略</strong>紧密相关，常见的<strong>替换策略</strong>主要有LRU（最近最少使用）和Random（随机）两种，目标都是为了把未来可能要被用到的cache line保留下来，以提高Cache命中率。一般情况下，采用LRU策略。不过，有些实验表明，Random策略在一些场景下要优于LRU策略。</p>
+<p>以上主要是针对缓存的读操作进行说明，实际使用过程还有大量的写操作，这将导致对应位置的数据会被弄脏，而如何使Cache中的数据与内存中的数据保持一致就成为了一个重要的问题，解决这个问题的策略即称为<strong>写策略</strong>（Writing Policy）。一般有：</p>
+<ul>
+<li><strong>写穿/写透</strong>（Write Through）：数据同时写入Cache和内存，写时如cache line不存在（write-miss），则一般使用<strong>不分配写</strong>（No-write Allocate），直接写新数据至内存。</li>
+<li><strong>写回</strong>（Write Back/Write Behind）：仅写入Cache，延迟写入（lazy write）内存，写时如cache line不存在，先读数据至cache line，再写入新数据。需标记并跟踪脏的cache line。延迟写入的时机包括替换，超时，被动刷回等操作的发生。</li>
+</ul>
+<blockquote>
+<p>【<a href="https://xupifu.github.io">蚍蜉</a>】注：对于一些特殊的地址空间，还有一些其他的写策略。比如，不希望依赖于CPU的一些PCI-E总线的数据传输，需要用到<strong>uncacheable内存</strong>，以避免一致性问题（后文会提到）。再比如，针对显卡内存的优化写策略：<strong>写合并</strong>（Write Combined），等待cache line的多次修改合并后，才允许刷回内存。</p>
+</blockquote>
+<h3 id="1-4-缓存一致性"><a href="#1-4-缓存一致性" class="headerlink" title="1.4 缓存一致性"></a>1.4 缓存一致性</h3><p>一个CPU通常都有自己的L1，L2等各级本地缓存，对应的操作和策略实现有如上文所述。在多CPU系统（<strong>SMP系统</strong>）中，各CPU都有自己的本地缓存，而内存是共享资源，在一个CPU中发生的写操作，其他CPU如何保持同步一致，成了一个非常重要的问题，即<strong>缓存的一致性问题</strong>（Cache Coherency）。</p>
+<blockquote>
+<p>【<a href="https://xupifu.github.io">蚍蜉</a>】注：这里仅指CPU写操作导致的一致性问题，不包括外设自身的寄存器改写或DMA操作等其他因素。还有一个概念，memory consistency，也是一致性问题，主要是从软件层的角度去看待一致性问题，此处不展开描述。</p>
+</blockquote>
+<p>解决这个问题的基本想法是<strong>窥探</strong>（snooping），由于所有CPU的内存访问是共享同一条总线的，总线的<strong>仲裁机构</strong>（arbitrate）就可以去跟踪所有缓存在做什么。一旦有写操作发生，即可广播通知其他处理器，其他处理器就可以让对应的cache line失效。在写穿模式下，这种方式可以有效解决一致性问题，但在写回模式中，就存在问题，cache line中的改写并不会立刻刷回内存，而是延迟的。多个CPU就可能存在多个副本，刷回内存时便会产生冲突。如果能在修改本地缓存之前，就通知其他处理器，即可解决该问题，这也是<strong>MESI协议</strong>(Modified，Exclusive，Shared，Invalid)的基本思路。其中，最主要的状态为E，即独占式访问，需要改写本地缓存时，向总线发出独占请求，获得独占权后才能进行改写，其他处理器如果需要读，仲裁必须通知对应CPU将已改写cache line刷回。（具体细节这里不做展开，请自行查阅相关资料）</p>
+<h3 id="1-5-小结"><a href="#1-5-小结" class="headerlink" title="1.5 小结"></a>1.5 小结</h3><p>该章节对Cache进行了基本介绍，描述了各层次存储设备的性能差异，这正是引入Cache概念的重要原因。同时，以CPU缓存为基础，说明了Cache解决性能差异的主要策略和方法。文中，缓存基本要素和缓存一致性都是针对CPU展开的，这些操作已在CPU内部完成，对程序设计是透明的。尽管如此，了解其中的工作原理还是有必要的，比如，如何设计程序去辅助CPU更好的利用其Cache，在多核环境下如何考虑同步互斥，锁性能等等。更重要的是，Cache的这些基本思想不仅仅用在CPU等硬件设备上，它的使用无处不在，从单机到分布式系统，软件层的Cache非常丰富，如磁盘缓存（Page Cache/Swap Cache），数据库缓存，分布式缓存（键-值对缓存，KV Cache），Web Cache，CDN等。后续文章将重点介绍Cache在软件层的应用。</p>
+<h2 id="2-Cache基本模型"><a href="#2-Cache基本模型" class="headerlink" title="2 Cache基本模型"></a>2 Cache基本模型</h2><p>在介绍软件层的各种Cache应用之前，本文首先根据上文的描述以及Cache常见的基本操作，给出了C缓存的基本模型图，结合常见的CAP理论，介绍了缓存常见的基本架构。</p>
+<h3 id="2-1-缓存模型概述"><a href="#2-1-缓存模型概述" class="headerlink" title="2.1 缓存模型概述"></a>2.1 缓存模型概述</h3><p>在介绍软件层的各种Cache应用之前，根据上文的描述以及Cache常见的基本操作，这里给出了Cache的基本模型图：</p>
+<p><img src="https://xupifu.github.io/assets/cache-model.png" alt="图：Cache基本模型"></p>
+<p>如图所示，缓存基本模型中，主要角色有缓存节点，共享存储，仲裁和总线，基本操作则一般包含：</p>
+<ul>
+<li><strong>set</strong>：将某一数据加入到缓存中，如缓存中已经存在该数据，则视为数据更新，数据更新需考虑写方式；如缓存已满，需考虑如何替换。</li>
+<li><strong>get</strong>：查询并获取缓存中的某一数据，需重点考虑性能。</li>
+<li><strong>del</strong>：删除缓存中的某一数据，相当于失效，对于脏数据是丢弃还是刷回，可根据情况进行处理。</li>
+<li><strong>flush</strong>：将一些或全部数据刷回共享存储，根据使用情况进行策略实现。</li>
+</ul>
+<p>以上基本操作涉及映射策略，写策略和替换策略，实现上，还存在多个可选功能，如参数设置，超时失效功能，脏数据回写，持久化问题等。</p>
+<p>另外，关于模型，具有如下说明：</p>
+<ul>
+<li>各角色通过总线相连，总线可以是内存总线，网络，光纤等，这里统一称为总线。总线可靠性存在强弱之分，角色之间会发生不可通信的问题。</li>
+<li>缓存可以是<strong>本地缓存</strong>，也可以是<strong>分布式缓存</strong>。本地缓存通常由本地主动管理，分布式缓存则通常相对被动。</li>
+<li>模型中的缓存可以是一个或多个，在多个缓存的场景下，仲裁需注意一致性问题。</li>
+<li>模型是可以嵌套的，一个模型放在更大的模型中，就变成更大模型里的缓存，依此类推，逐级嵌套。</li>
+<li>模型对上层访问者可以是透明的，也可以是显式的，显式模型需要上层应用在设计时自行控制缓存读写等操作。</li>
+<li>有些访问者可以不经过缓存，而直接访问共享存储，仲裁需注意一致性问题。</li>
+</ul>
+<p>CPU缓存正是上述模型的一个实例：各个CPU的缓存对应为缓存节点，内存为共享存储，缓存节点和共享存储靠内存总线进行连接，仲裁机构在内存总线上，协调各个缓存节点的读写访问。CPU缓存作为本地缓存，需要完成自身管理，对程序是透明的，仲裁的角色也主要负责处理一致性问题（见<code>1.4节缓存一致性</code>）。而内存总线通常认为是可靠的，一旦出错，则视为整机出错。</p>
+<p>更进一步，如果我们把上述的CPU缓存+内存作为一个基础缓存系统，即作为新的缓存节点，多个这样的缓存节点及其它们的共享存储通过网络相连，仲裁机构可以是其中的某个节点，也可以是独立的。这种新的缓存系统即为分布式缓存系统，从单机到分布式，需要解决的问题要复杂得多，下文将引入该领域的一个总结，即<strong>CAP理论</strong>，对涉及的主要问题做一个介绍。</p>
+<h3 id="2-2-CAP"><a href="#2-2-CAP" class="headerlink" title="2.2 CAP"></a>2.2 CAP</h3><p>从基本模型的说明中可以看到，可靠性问题，一致性问题，以及缓存本身的可用性问题，均在该模型中有所体现，CAP理论针对以上三个基本问题做了详述。在CAP的论文中，其定义大意如下：</p>
+<ul>
+<li><strong>Consistency</strong>：一致性，任何的读写都应该看起来是原子的，之后的读一定能读到前面写的内容，读写请求是经过排序的。</li>
+<li><strong>Availability</strong>：可用性，非失败节点应在有限时间内给出请求回应。</li>
+<li><strong>Partition Tolerance</strong>：分区容忍性，允许节点之间丢失任意多的消息，但整系统依然能持续提供服务。</li>
+</ul>
+<p>论文提出，这三者不可兼得，证明也相对简单：反证法，如果三者可同时满足，则允许P的存在，那么一定存在节点之间的丢包情况，如此则不能保证C，得证。</p>
+<p>尽管证明简洁明了，但很多工程师和研究者对该理论提出了质疑，认为这些定义的语义存在模糊不清的情况（如果你对CAP还是不太理解，那是正常的，确实存在语义模糊的情况），这里不做澄清（有兴趣的可自行查阅相关的质疑文章），后来CAP论文作者自己重新发了论文，对CAP理论进行了一些限定说明，比如不支持<strong>数据库事务</strong>之类的场景等。可见，CAP理论并不能用于任何使用场景，但在任何一个分布式系统中，CAP依然是要着重考虑的三个基本问题，只是CAP概念在不同的模型或场景中会有不同的体现。在分布式存储中，CAP已经成了NoSQL，KV-Cache等系统实现的基础。</p>
+<p>关于分区容错性这个概念，存在一定的误导性，分区的概念应该是系统的网络组织特性。组织本身的可靠程度是有强弱的，以网络连接的方式为例，它存在问题的概率就比较大，比如某个路由器出现故障导致各节点之间无法通信，或者机器本身的延迟或故障，都会导致分区问题。在这种情况下，要保证不丢消息是不可能的，所以，在一个分布式存储系统中，CAP的选择应该换成另一个问题：<strong>在一个允许网络发生故障的系统中（P成立），该选择一致性（C）还是可用性（A）</strong>。</p>
+<p>举个例子，系统要提供一个服务，实现上可以是一个单机系统（单节点），这样就不存在一致性问题，唯一存在的问题是，该节点一旦故障，系统就无法提供服务。因此，持续提供服务，一般会使用多个节点进行冗余，即存在多个副本节点，这些节点通过网络连接。这时候，如果在某一节点发生数据变更，如何同步数据到所有副本节点就是个问题，存在两种情况：</p>
+<ul>
+<li><strong>一致性优先</strong>：先同步数据至所有副本节点，再反馈结果至访问者。通信顺畅的情况下，节点越多，时间越长，反馈的实时性不能保证；如果某节点失败，则同步将无限期等待，反馈无法完成，即可用性无法保证。</li>
+<li><strong>可用性优先</strong>：只要有1个节点（数量根据实际确定）保证有最新数据，就可以反馈结果至访问者，剩余副本节点的数据再异步完成更新，显然，一致性无法保证。</li>
+</ul>
+<p>一致性和可用性的权衡处理，有一种方法，称为<strong>BASE</strong>（Basically Available, Soft-state, Eventually Consistent），即<strong>最终一致性</strong>的概念，它不要求相对实时的一致性，仅要求最终能够达到一致，该概念在很多分布式系统中已经得到应用。</p>
+<h3 id="2-3-缓存架构"><a href="#2-3-缓存架构" class="headerlink" title="2.3 缓存架构"></a>2.3 缓存架构</h3><p>依据缓存基本模型和CAP理论，结合业务场景，可以有多种架构方式，如图所示：</p>
+<p><img src="https://xupifu.github.io/assets/cache-arch.png" alt="图：缓存架构"></p>
+<p>其中：</p>
+<ul>
+<li>缓存和共享存储分别提供接口，应用通过这些接口自己管理和使用缓存和共享存储，缓存与共享存储之间的交互必须经过应用。</li>
+<li>缓存和共享存储提供统一接口，应用无需关心底层细节，缓存层是透明的。读写一般都经过缓存，由缓存与共享存储进行交互。</li>
+<li>读写分离，所有写直接到共享存储，所有读都通过缓存，缓存层自己从共享存储获取新数据。</li>
+</ul>
+<p>在一些缓存实例中，比如Page Cache，BCache，flashcache，便是提供统一接口，缓存层对应用是透明的，这是一种比较常用的架构方案。Memcached主要的管理则是在客户端完成的，缓存层不直接与共享存储交互，都需要经过客户端。这两种架构实例的具体描述请见后文章节。读写拆分则在数据库存储方案（多个数据副本）经常使用，缺点是数据的一致性可能存在一定的滞后。缓存架构会影响缓存的更新策略，这是缓存设计的一个要点，该部分描述请见后续章节。</p>
+<h3 id="2-4-小结"><a href="#2-4-小结" class="headerlink" title="2.4 小结"></a>2.4 小结</h3><p>本章节梳理并介绍了缓存的基本模型和架构方式，并以CPU缓存为例对模型进行了说明，引出了分布式系统中常见的CAP理论，对实际设计中的权衡难点（一致性vs可用性）进行了说明，最后引出了最终一致性的概念，这是一种常见分布式设计思想。对于这些概念，本章仅做简单介绍，并没有涉及具体实现。现实系统千差万别，用于支撑系统的算法和策略也会根据实际情况进行设计。后续章节会介绍一些相对常用的算法和策略，作为对本章的补充说明。</p>
+<h2 id="3-缓存相关算法"><a href="#3-缓存相关算法" class="headerlink" title="3 缓存相关算法"></a>3 缓存相关算法</h2><p>缓存的概念已经发展了很多年，相关的算法和策略也是层出不穷，但本章并不打算对每个算法进行详细说明，也会忽略算法证明，更多的是去介绍主要的算法是如何考虑的。所以，本章旨在抛砖引玉，感兴趣者可自行查阅相关资料。</p>
+<h3 id="3-1-Consistent-Hashing算法"><a href="#3-1-Consistent-Hashing算法" class="headerlink" title="3.1 Consistent Hashing算法"></a>3.1 Consistent Hashing算法</h3><p>将任意长度的数据A映射成为一段固定长度数据B的算法，即为hash算法。生成的值称为hash值，值域是有限的，理论上，相同的hash值会存在多个不同输入。实际应用中，好的hash算法需要确保这种冲突不容易出现（衡量好坏的方式有很多维度，最主要的维度就是分散性），对于有性能要求的应用，还需考虑算法本身的性能。常见的hash算法有MD5，SHA等。算法的主要应用有：</p>
+<ul>
+<li><strong>消息摘要，身份验证或数字签名</strong>：利用hash算法的特点，只要输入有变化，输出也会发生变化，能够得知数据是否被篡改。</li>
+<li><strong>数据查找</strong>：输入可以被映射到有限地址区间上，该地址区间也称为hash表，查找速度比较快。</li>
+<li><strong>负载均衡</strong>：好的hash算法一般都具有良好的数据分散性，这使得hash可以作为负载均衡的一种方法。</li>
+</ul>
+<p>结合缓存的基本模型，假设缓存节点数量有N，分散数据对象的方式一般形如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">H(object) % N</div></pre></td></tr></table></figure>
+<p>对象object是输入值，N为缓存节点数量，H表示hash算法，输出为对象object应该被映射到的缓存节点序号。</p>
+<p>在<strong>N不变</strong>（节点数量固定）的情况下，这种分散方式简洁实用。但随着系统负载的增加，节点数量就需要增加，以提高系统处理能力，这种情况下，<strong>N可变</strong>，如果依然采用同样的数据分散方式，就会导致一个问题：数据映射位置发生了变化，原来缓存的数据大量失效，在重建缓存的过程中，后端的共享存储服务器将承受极高的负载，甚至宕机（<strong>dog-piling效应</strong>）。为此，MIT研究人员在1997年提出了<strong>Consistent Hashing</strong>（译为<strong>一致性哈希</strong>，有一定误导性，关于该算法的介绍非常多，请自行查阅）算法，核心目标是：<strong>当缓存节点增加或减少时，为减少对整系统的冲击和影响，需尽可能保持缓存数据的有效性和分散性</strong>。实现的基本思路为：</p>
+<ul>
+<li>整个hash空间大小用4个字节描述，值域为0～2^32-1，通常理解成一个闭合圆环。</li>
+<li>将缓存节点（node）也作为数据对象（object），进行相同的hash计算，值均落到hash空间上。</li>
+<li>根据hash值，建立数据对象和缓存节点的映射关系。数据对象的hash值必然落在两个缓存节点之间，可将数据对象映射到值大（或小，只要统一即可）的缓存节点。为快速定位和增删节点，可用<strong>平衡树</strong>组织缓存节点。</li>
+<li>为分散性和均衡度，在节点数量较少或节点能力不同的情况下，可建立<strong>虚拟节点</strong>（virtual nodes），多个虚拟节点对应一个物理节点。</li>
+</ul>
+<p>以上思路可表述为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">2^32            -&gt; N</div><div class="line">H(object) % N   -&gt; object_key</div><div class="line">H(node) % N     -&gt; node_key</div><div class="line">map(object_key) -&gt; node_key</div><div class="line">node_key        -&gt; virtual_node</div><div class="line">virtual_node    -&gt; physical_node</div></pre></td></tr></table></figure>
+<p><img src="https://xupifu.github.io/assets/cache-hashing.png" alt="图：Consistent Hashing算法"></p>
+<p>从中可以看到，基本思路的前两点依然为传统的hash取余的方式，Consistent Hashing算法的核心是<strong>虚拟节点</strong>，即创建一组大于实际节点数量的虚拟节点，并维护虚拟节点和物理节点的映射关系。当某物理节点失败移除时，由于虚拟节点的数量固定不变，故只需要重建小部分节点数据，整体影响较小。经典算法中，失败节点的下一个节点将替代失败节点继续提供服务，这也是该算法存在的一个缺陷，即下一节点将承受多一倍的数据服务，整体上存在一定程度的不均衡。如何管理虚实映射表，而不是简单的让下一个节点来替代失败节点，成为了该算法改进的一个重要方向。具体实现不一定按以上方式实现，实例可见Amazon Dynamo和Ceph Crush算法等。</p>
+<h3 id="3-2-查找算法"><a href="#3-2-查找算法" class="headerlink" title="3.2 查找算法"></a>3.2 查找算法</h3><p>查找是指在一系列信息中寻找特定的信息元素。在缓存系统中，定位缓存对象的效率是衡量该系统的一个非常重要的指标。查找算法的设计和查找效率与信息的组织方式相关，比如信息是否有序，是否动态增减等等，这些都是算法需要考虑的因素。常见算法策略包括但不限于：</p>
+<ul>
+<li><strong>线性查找</strong>：穷举寻找特定的信息元素。算法实现和信息组织都非常简单，但查找效率低下，O(n)。一般用于信息量较小或信息无序的情况。</li>
+<li><strong>二分查找</strong>：要求信息有序，并且能够快速定位中间元素，增删代价高，查找效率O(logn)。一般用于一次排序之后不再变化的信息集。</li>
+<li><strong>树表查找</strong>：依赖于各种树（红黑树，B/B+树，字典树，基树等）进行信息组织，增删简便。平衡树的查找效率为O(logn)，红黑树常见于各种调度队列等，B/B+树则常见于文件系统和关系型数据库等应用（传统硬盘IO限制，有助于连续访问）。字典树或基数效率则为O(m)，m为查找的键值长度，效率通常高于平衡树，可见于IP路由表，Linux页高速缓存的组织，nginx的geo模块，搜索/输入法联想等。</li>
+<li><strong>哈希查找</strong>：采用hash表，配合冲突解决方法，平均查找效率可以达到O(1)，最坏情况为O(n)，由于冲突的存在，需要在空间和时间上做出权衡取舍。较常用，如KV Cache系统等。</li>
+</ul>
+<h3 id="3-3-替换算法"><a href="#3-3-替换算法" class="headerlink" title="3.3 替换算法"></a>3.3 替换算法</h3><h4 id="3-3-1-替换算法概述"><a href="#3-3-1-替换算法概述" class="headerlink" title="3.3.1 替换算法概述"></a>3.3.1 替换算法概述</h4><p>缓存空间一般是相对有限的，替换指的就是缓存空间满的情况下，如何选择缓存对象并换出。此类算法非常多，常见的有如LRU，ARC，LFU，FIFO，Random等，针对实际使用场景时，这些算法各有优劣。这里对算法细节不做描述，而是关注：在设计替换算法时，目标是什么以及为达成该目标应该考虑哪些因素。通常，算法的目标比较直接，即：<strong>基于对象的历史情况，评估对象未来的价值，替换时舍弃价值最小的对象</strong>。价值是个相对概念，从宏观上看，只要更有助于提高系统命中率的，即可认为价值更高。从实现上看，还需要考虑算法的实用性，比如实现的难易程度以及算法自身的性能问题等。而算法需要考虑的主要因素一般有：</p>
+<ul>
+<li><strong>访问频率</strong>：经常被访问的对象还将被经常访问，应替换频率最低的对象。</li>
+<li><strong>访问间隔</strong>：基于访问的时间局部性，最近被访问的将再被访问，应替换最久未被访问的对象。</li>
+<li><strong>获取代价</strong>：替换重新获取代价最低的对象，主要用于降低平均延迟。</li>
+<li><strong>对象大小</strong>：替换占用最大的对象。</li>
+</ul>
+<p>考虑访问频率和访问间隔这两个因素是非常直接的想法，它们也是诸多算法实现的基础。但是，如果仅考虑访问频率，会导致一些短时间被频繁访问的对象未被替换，如果仅考虑访问间隔，则会导致一些频率较高但最近未被访问的对象被替换。这两种缺陷都属于<strong>缓存污染</strong>（cache pollution，简单说：该留的没留，该丢的没丢）。为规避此类问题，在具体实现替换算法时，并不会单一的考虑其中的某一个因素，而是结合各自的优势，综合算法实用性以及实际的应用场景来实现。为了更具体的说明算法实现是如何考虑的，下文将以Linux内核的<strong>页面回收算法</strong>（PFRA）为例，介绍算法实现背后的想法：如何平衡访问频率和访问间隔这两个因素。</p>
+<h4 id="3-3-2-Linux页面回收算法"><a href="#3-3-2-Linux页面回收算法" class="headerlink" title="3.3.2 Linux页面回收算法"></a>3.3.2 Linux页面回收算法</h4><p>现代操作系统基本上都启用了CPU的保护模式，在保护模式下，支持分页和虚拟内存等特性。各个进程的进程空间，看到的都是一段连续且容量较大的虚拟内存，物理内存则是不可见的，虚拟地址和物理地址之间的转化依靠MMU完成。一个系统中的物理内存不一定是连续的，管理上按基本单位（称为页面，一般为4KB）进行组织，最终形成分配器。由于每个进程都有自己的虚拟内存空间，而物理内存则是相对有限的，如何映射和管理这些内存空间，是每个操作系统需要着重考虑的，即内存管理子系统。任何一个进程，当虚拟内存页没有对应的物理内存时，就需要分配物理内存并建立映射，由于物理内存相对有限，当没有空闲页面时，就需要替换一些物理内存页到外存空间，这就是页面回收。</p>
+<blockquote>
+<p><strong>注意</strong>：以下均假定LRU链表的头部属于活跃度较高的，尾部则是活跃度较低的。由于链表是全局链表，需加锁处理，如果频繁操作，效率的影响会比较大。下文的描述不是完整和准确的PFRA算法，但给出替换算法是如何权衡和设计的。</p>
+</blockquote>
+<p>Linux内核中，页面是按zone进行组织的，分配出去的页面存放在两级LRU链表（循环双向链表）中，分别为active链表和inactive链表（实际的实现，链表数量更多，这里简化为两种）。进行页面回收的时候，PFRA要做的是：</p>
+<ul>
+<li>移动active链表中不活跃的页面到inactive链表中。</li>
+<li>尝试回收inactive链表中不活跃的页面。</li>
+</ul>
+<p>活跃与否的一个判断标准是页面被访问的情况。在Linux中，控制访问情况的方式一般有：</p>
+<ul>
+<li>页表项（PTE）中的访问位或写脏标志位，由MMU硬件完成设置。</li>
+<li>内核提供的读写等系统调用，对应为页面结构体的引用位（PG_referenced）。</li>
+</ul>
+<blockquote>
+<p><strong>注意</strong>：后续会简化描述，这几种标志位统称为访问位。Linux内核就是根据这些标志位组合来调整和判断页面活跃度的，下文的策略类似但不尽相同。</p>
+</blockquote>
+<p><strong>页面活跃度调整</strong></p>
+<p>为效率考虑，页面并不会在每次有访问时，就在链表内进行移动，一般情况下，只做访问位标记，不做顺序调整。显然，这不是传统LRU的做法，为了同样能够达到LRU的效果，可以采用<strong>过渡链表</strong>和<strong>访问位控制</strong>的方式来达到该目的。一般过程如下：</p>
+<ul>
+<li>第一次加入的时候，页面置于inactive链表的头部。</li>
+<li>PFRA按周期启动，根据情况（<strong>交换倾向值</strong>）从active链表尾部移动一批页面到过渡链表，同时清除该批页面的访问位。</li>
+<li>下个PFRA周期，查看这些页面的访问情况，如果重新被访问了，将这些页面一并移动到active链表头部；未被访问的，则降级到inactive链表头部。</li>
+<li>如果inactive链表中的页面被访问了，第一次只做标记，不做移动，再次被访问时才移动到active链表头部。</li>
+</ul>
+<p>可以看到，做顺序调整是按批次进行的，而不是随时调整。无论升级还是降级，都存在一个考察阶段，这种方式可以同时兼顾页面的访问间隔和访问频率，尽管不是精确的，但实验显示，效果良好。</p>
+<p><strong>页面回收</strong></p>
+<p>回收比较直接，从inactive链表尾部取出一定数量页面（数量是按需逐级增加的），逐个再次确认是否能够回收，最后完成回收。</p>
+<h4 id="3-3-3-Random替换策略"><a href="#3-3-3-Random替换策略" class="headerlink" title="3.3.3 Random替换策略"></a>3.3.3 Random替换策略</h4><p>大部分的替换算法都是基于以上的一些因素考虑的，但Random之类的算法却是例外：<strong>随机的挑选对象进行替换</strong>。这种方式实现简单，替换效率也非常高。那么，该类算法适用于什么样的场景呢？有实验表明，<strong>当缓存空间大小达到一定值后，各类替换算法的命中率就不会有显著区别</strong>。换句话说，只要缓存空间足够大，Random类的算法就非常具有优势。当我们在一些缓存系统中看到此类算法时，不必为它们的简单粗暴感到惊奇，比如Redis的替换策略之一就是Random策略：随机挑选几个对象并比较淘汰。</p>
+<h4 id="3-3-4-替换算法小结"><a href="#3-3-4-替换算法小结" class="headerlink" title="3.3.4 替换算法小结"></a>3.3.4 替换算法小结</h4><p>除了Random策略之外，多数算法采用了类似Linux页面回收的想法：两级（或多级）LRU链表，这是一种兼顾页面访问频率的策略。通过在各级链表之间的移动（升降级），可以调整页面活跃度（不是精确计数）。升级策略相对直接，只要页面被访问了，即可考虑升级。降级则是通过扫描，将某一级中的不活跃页面降到下一级，在下一次扫描到来之前，被降级的页面只要被访问了，即可考虑升级。可以看到，对于访问频率和间隔都不是精确计算的，也就是说，这种方式会存在误伤的情况。但是，在具体实现时，还是需要结合算法实现的难易程度和算法性能等因素进行统一权衡。</p>
+<p>显然，这种策略能够降低缓存污染的问题，但有一点需要特别注意，第一次加入的页面应该放置在什么地方？如果直接放置在链表头部，可能会导致一些高价值的页面被替换，污染问题依然存在。为解决该问题，一般会选择将页面放置在链表中间的某个位置（Facebook的flash cache就采用了该策略），如果是活跃页面，自然会保留下来；如果不是，也能够尽量不影响高价值的页面。实际位置需要配合应用测试确定。</p>
+<h2 id="4-Cache实例"><a href="#4-Cache实例" class="headerlink" title="4 Cache实例"></a>4 Cache实例</h2><h3 id="4-1-Linux-Page-Cache"><a href="#4-1-Linux-Page-Cache" class="headerlink" title="4.1 Linux Page Cache"></a>4.1 Linux Page Cache</h3><p>Page Cache，称为<strong>页高速缓存</strong>，是Linux虚拟内存子系统的一个重要组成部分，它将闲置的内存作为块设备数据的缓存，以达到提高系统性能的目的。Page Cache对上层应用是透明的（用户空间已提供一些参数可供设置），实现在具体文件系统之上，缓存的页面都是具体的<strong>文件页</strong>。如果不想使用Page Cache，应用可通过Direct IO的方式来进行读写访问。同样作为缓存，Swap Cache是针对<strong>匿名页</strong>（相对文件页而言）的，管理上与Page Cache存在诸多类似的地方，故本节不额外介绍Swap Cache，仅描述Page Cache。</p>
+<p>在实现上，Page Cache与虚拟内存子系统关系紧密，涉及的方面主要有：</p>
+<ul>
+<li>缓存页的组织方式和管理方法，需注意Direct IO的读写方式所引起的一致性问题。</li>
+<li>脏页回写管理，即回写策略，需要考虑后端设备的能力以及回写的均衡性。</li>
+<li>预读，依据局部性原理和实际访问模式（检测是否为顺序IO），确定预读策略。</li>
+<li>替换策略，属于Linux页面回收的一部分，需管理页面整体的历史情况，并决定换出哪些页面，换出过程可能涉及脏页回写。</li>
+</ul>
+<h4 id="4-1-1-页面组织"><a href="#4-1-1-页面组织" class="headerlink" title="4.1.1 页面组织"></a>4.1.1 页面组织</h4><p><img src="https://xupifu.github.io/assets/cache-linuxio.png" alt="图：Linux文件访问方式"></p>
+<p>如图所示，Linux内核中与文件操作相关的接口主要分成两类：</p>
+<ul>
+<li><strong>拷贝方式</strong>：用户空间自己申请内存，内核需要将内容拷贝至用户空间的内存中。代表性实现包括Buffer IO（read/write，fread/fwrite，pread/pwrite等），Direct IO（不经过Page Cache），AIO等。</li>
+<li><strong>内存映射</strong>：将内核空间的页面映射至用户空间，用户程序可通过指针直接操作这些内存，无需拷贝。代表性实现为mmap。</li>
+</ul>
+<p>以上的文件读写操作有些是不经过Page Cache的，内核为一致性考虑，做了简单处理，它会捕捉不经过缓存的写操作，比如Direct IO，捕捉到之后，需无效缓存中相应的页面，但这种处理，很容易造成之前写的脏页与当前的Direct IO之间的冲突，即内核不保证一致性，用户程序需要自己处理一致性问题。</p>
+<p>拷贝式的文件IO相对简单，比如普通read操作，首先在缓存中寻找对应页面，如未命中，先从后端设备读取相应文件页至缓存，再将页面拷贝至用户空间，如果命中，则直接拷贝。对于mmap方式则相对复杂，调用mmap后，内核将分配一段地址空间（VMA），起始时，页表中虚实映射尚未建立，该空间并没有相应的物理页，访问时将触发页错误处理（缺页异常）。缺少的页面将通过缓存系统进行填充，未在缓存中的页面需要读取并加入缓存系统，如已在缓存中，则直接建立相应虚实映射，用户就可以访问对应页面了。所有的页面会放入active/inactive的LRU链表中进行管理，并用于后续的页面回收。</p>
+<p>上述的两种文件IO方式，都涉及到了缓存的命中和插入操作，后文的替换策略还涉及删除操作，其中，效率是设计中需要着重考虑的因素。内核在实现Page Cache时采用了<strong>基树</strong>（radix tree）对页面进行管理，每个文件对应一棵基树。基树是一种搜索树，Linux内核利用这个数据结构，结合文件内偏移地址，可以快速定位树中对应的页面，查找，插入和删除等操作的效率也非常高。后文涉及的算法和策略正是基于radix tree完成的。</p>
+<h4 id="4-1-2-脏页回写"><a href="#4-1-2-脏页回写" class="headerlink" title="4.1.2 脏页回写"></a>4.1.2 脏页回写</h4><p>Linux内核的页高速缓存采用writeback回写策略，脏页回写启动的时机主要有：</p>
+<ul>
+<li><strong>定时启动</strong>：内核存在脏页回写线程，会定时启动（可设置，默认5秒），该线程只对超时（可设置，默认30秒）的脏页进行回写。</li>
+<li><strong>脏页超量</strong>：写操作发生时，检查缓存中的脏页比例，如超过一定的比例（可设置），则启动脏页回写，直到比例低于水准值。注意：不同的比例对当前的写操作影响不同，一般情况下，不阻塞写，但比例较高时，则会阻塞，用户程序应该注意该特性以避免影响应用性能。</li>
+<li><strong>页面回收</strong>：页面回收选中的页面可能是脏页，需要先把脏页写到后端设备再回收。</li>
+<li><strong>用户强制</strong>：在用户空间强制触发脏页回写。</li>
+</ul>
+<h4 id="4-1-3-预读策略"><a href="#4-1-3-预读策略" class="headerlink" title="4.1.3 预读策略"></a>4.1.3 预读策略</h4><p>基于局部性原理，Page Cache在实现时加入了预读的特性。在策略上，为保证预读命中率，Linux内核需要对顺序读进行检测。对于那些随机读的应用，应避免预读造成的IO浪费。</p>
+<p>Page Cache中的预读策略要点如下：</p>
+<ul>
+<li>对于第一个读请求，会<strong>同步预读</strong>紧随其后的少数几个页面（通常为三个页面）。</li>
+<li>对于之后的读请求，如果在缓存中未能命中，则认为是随机访问，依然采用同步预读少数页面的方式，不扩大ahead预读窗口。</li>
+<li>如果在缓存中命中，则认为是顺序访问，逐步扩大ahead预读窗口并<strong>异步读取</strong>窗口中对应的页面，以便之后的使用。注意：窗口大小存在上限。</li>
+</ul>
+<h4 id="4-1-4-替换策略"><a href="#4-1-4-替换策略" class="headerlink" title="4.1.4 替换策略"></a>4.1.4 替换策略</h4><p>Linux内核在内存降低到一定的水准值之后，就会启动页面回收的工作（详见<code>3.3.2 Linux页面回收算法</code>一节）。Page Cache中的页面本身就是利用闲置内存来加速系统性能的，所以，当回收工作启动后，这些缓存页面理所当然的成为了回收的主要对象。不过，这种回收也不是完全没有代价的。尽管是文件页（后端设备一般有备份），但在使用的过程中，可能已经变成了脏页，这就涉及到了脏页回写。绝大部分的脏页可通过脏页回写（见<code>4.1.2 脏页回写</code>一节）完成，但依然有部分留在缓存中，因此回收时可能引发一定量的IO操作，对系统性能造成一定影响（注：Swap Cache的影响更大），回收不当的话，还可能出现<strong>内存抖动</strong>现象。</p>
+<p>一般情况下，Linux内核可完成对内存的自动回收工作，不过，在用户空间也提供了清除的方法（/proc/sys/vm/drop_caches），用户可以对缓存进行人工清除。</p>
+<h4 id="4-1-5-Page-Cache小结"><a href="#4-1-5-Page-Cache小结" class="headerlink" title="4.1.5 Page Cache小结"></a>4.1.5 Page Cache小结</h4><p>Linux内核提供的Page Cache是一个通用的实现，对于大部分的应用场景是非常有效的，但缺点也同样明显，对于一些特殊应用，使用Page Cache反而影响应用性能。因此，这些应用一般都选择跳过Page Cache，自己管理缓存。如果一定要使用Page Cache，请注意以下要点：</p>
+<ul>
+<li>回写策略采用writeback方式，存在数据丢失的风险。</li>
+<li>对于写入量较大的应用，容易导致脏页率过高，从而阻塞写操作。这种情况下，不能完全依赖缓存的自动回写机制，应用需在合适时机触发回写操作，以免脏页率过高影响应用的使用。</li>
+<li>页缓存的各种机制和策略是针对整系统的，而不是某个应用，其效用受外界因素的影响较大。对于有性能要求的应用，最好不要依赖于Page Cache，而是自己实现和管理缓存。</li>
+<li>页缓存理论上可以用来加速所有的块设备，但最早主要是针对磁盘特性进行设计的，对于新的一些存储设备，这些设计就不一定能够很好的使用新设备的特性。</li>
+<li>普通的read/write的访问方式比mmap访问需要多一次拷贝。</li>
+<li>在proc文件系统中有一些影响系统性能的参数可供调节。</li>
+</ul>
+<h3 id="4-2-Facebook-flashcache"><a href="#4-2-Facebook-flashcache" class="headerlink" title="4.2 Facebook flashcache"></a>4.2 Facebook flashcache</h3><p>众所周知，Facebook的数据量非常庞大，性能瓶颈比较明显，加上不均衡的冷热数据分布，应对这种不均衡，一般是将数据库在物理上进行冷热分层，但这种做法不利于扩展。随着Memcached等基于内存的缓存系统的发展和使用，这些问题慢慢得到了解决，但代价是昂贵的内存成本。随着闪存的不断发展，Facebook开始尝试从闪存存储上寻求解决方案，flashcache正是这样的方案，它是基于Linux的块设备缓存内核模块，目标是：<strong>使用SSD在磁盘和内存之间增加一级缓存，减少对磁盘IO操作，从而提升整体性能</strong>。由于采用了Device Mapper的方式实现，flashcache对应用是透明的，应用无需作任何改动，这也使得flashcache的方案非常具有优势。</p>
+<p>实现之前，Facebook的工程师对其数据库的读写请求模式进行了跟踪分析，为其缓存系统的回写和替换策略提供了设计依据。同时考察了闪存的特性，比如先擦后写，写放大，有限的擦写次数，多路操作，最佳读写页面大小，擦除块大小，TRIM等等。尽管这些特性都是在底层设备驱动或设备内完成的，但上层实现也需要了解一些设备的特性，才能更好的使用设备。</p>
+<p>结合以上的统计分析和闪存特性，flashcache的实现要点如下（flashcache是开源的，实现细节可阅读源码）：</p>
+<ul>
+<li>整个闪存空间以块为单位（通常比较大）进行组织，内部是较小的读写单元（通常为512B，4KB或8KB），采用hash映射。</li>
+<li>替换策略采用<strong>两级LRU</strong>进行实现，根据读写请求模式和模拟测试，对两级的数量百分比进行了设置，这种策略有效的避免了<strong>缓存污染</strong>问题（见<code>3.3 替换算法</code>一节说明）。</li>
+<li>脏数据回写，由于闪存本身就是非易失性的，只要还在闪存设备的生命周期内，数据就不会丢失，也就没有时间限制，flashcache中的脏数据回写策略是：替换时，如数据为脏，先刷回后替换，平常不做脏数据回写。</li>
+</ul>
+<p>现在的闪存设备容量越来越大（TB级别），性能也越来越高，但像flashcache这种脏数据回写策略还是存在一定隐患，实际使用时，建议定期将脏数据全部刷回，以免因为设备故障导致大量数据丢失。另外，如何更好的利用多核CPU及闪存多路操作的等特性，是flashcache可以进一步改进的地方。flashcache给Facebook带来了极大的性能提升，很多公司的软件栈都加入了flashcache支持，但随着这些年Linux内核的发展，比如dm-cache以及BCache等特性（类似flashcache）的支持，大家都开始转向使用标准的内核支持，而不是第三方的内核模块。</p>
+<h3 id="4-3-Linux-BCache"><a href="#4-3-Linux-BCache" class="headerlink" title="4.3 Linux BCache"></a>4.3 Linux BCache</h3><p>为了提高整体系统性能，使用SSD来加速磁盘的软硬件解决方案不断出现，除了上文提到的flashcache，还有Intel的SRT Caching技术，OCZ的Synapse Cache技术，Apple系统的Fusion加速方案等等。随着闪存技术的发展，Linux内核也加入了dm-cache和BCache特性，目的也是将SSD作为磁盘的加速部件。由于BCache在生产环境中使用较多，本节仅介绍BCache（从内核3.10开始支持）。</p>
+<p>BCache在设计时需要考虑的点与flashcache相似，具体实现的要点如下：</p>
+<ul>
+<li>闪存空间以块为单位进行组织，内部是较小的读写单元（称为扇区）。</li>
+<li>采用B+树和日志方式组织缓存数据，日志主要用于异常恢复。</li>
+<li>替换策略主要有LRU，FIFO和Random，默认为LRU。</li>
+<li>回写策略有writethrough，writeback，writearound和none四种，默认为writethrough，以保证数据不丢失。如果对写性能有较高要求，可启用writeback方式（注意脏数据百分比），但需面临数据可能丢失的风险。</li>
+<li>SSD主要优势在于随机IO，BCache内部可检测是否为顺序IO并避开。该功能可选。</li>
+<li>闪存发生IO错误时可根据情况进行处理，极端情况下可关闭缓存，让IO透传至后端设备。</li>
+<li>BCache可限流以匹配SSD设备性能。</li>
+<li>有预读功能，默认关闭。该功能可选。</li>
+</ul>
+<p>除了内核支持外，在用户空间提供了bcache-tools工具，用户可以定义缓存及需加速的设备。另外，在sysfs中还有很多配置选项和可调参数，用户可根据情况进行配置。</p>
+<h3 id="4-4-Memcached"><a href="#4-4-Memcached" class="headerlink" title="4.4 Memcached"></a>4.4 Memcached</h3><p>数据库的存取与外存相关，在实现上，考虑到外存性能，数据库内部一般都采用内存作为缓存，用来保存一些索引数据和计算结果，以减少IO操作，提高数据库性能。因此，对于一些数据库应用，比如Web应用，在数据量和访问量一般的情况下，少量服务器就可以轻松应付。但是，当数据量和访问量达到一定程度后，除了网络带宽的瓶颈外，数据库的存取（引发IO操作）也可能成为一个令人头疼的问题。Memcached便是其中的一种解决方案，<strong>它是一个开源的高性能分布式缓存系统，通过在内存中缓存数据（Key-Value键值对方式），来减轻数据库负载，从而提高相关业务应用的性能</strong>。</p>
+<p>Memcached的实现相对简单，分为客户端（Client）和服务端（Server），服务端通过网络API的方式与客户端进行交互，尽管被称为分布式缓存，但实际各个服务端是独立的，只提供缓存基本操作，分布式部署由客户端完成，一般采用Consistent Hashing（见<code>3 缓存相关算法</code>一章）的方式进行扩展和管理。</p>
+<p><img src="https://xupifu.github.io/assets/cache-memcached.png" alt="图：Memcached架构"></p>
+<p>在使用Memcached时，一般具有以下特点：</p>
+<ul>
+<li>服务端提供的是基于文本的协议，简单但性能不如二进制协议。</li>
+<li>客户端在缓存数据时，通过Hash计算确定缓存节点，即一条缓存数据只保存在一个缓存节点中。</li>
+<li>缓存的数据全部放在内存中，可能出现单节点数据全部丢失的情况，所以，使用Memcached时通常要求数据只读不写，以防数据丢失，需要更新数据时，失效对应的缓存数据，是否缓存最新数据由用户决定。</li>
+<li>缓存的数据一般都有过期时间，以缓解一致性问题。</li>
+<li>服务端使用Hash链表组织缓存数据，查询也通过Hash计算获取缓存数据位置。根据需要可以扩展Hash链表大小（默认为2^16）。</li>
+<li>服务端内部一般采用LRU替换策略。</li>
+</ul>
+<p>从以上可以看到，Memcached服务端没有考虑脏数据回写，也不关心缓存一致性问题，更没有多副本的问题，因此实现上非常简单，但对于读多写少的应用却非常有效，扩展性上也没有问题。尽管服务端是简单了，但一些问题，如缓存节点的管理，缓存一致性等，一般交由客户端进行统一处理。</p>
+<p>Memcached由于其简洁高效得到了广泛推崇，但也存在一些不足，比如仅支持一种数据结构，安全机制有限，没有持久化等，这也导致了它的使用场景也相对有限，后来的Redis一定程度上弥补了这些不足，它不仅仅是缓存，也提供了更多的数据结构支持，加上持久化特性，某种意义上成为了一种NoSQL数据库，这些使得Redis的使用场景更加丰富，近年发展也非常迅猛，当然，也带来了实现的复杂度，读写竞争，回写策略和一致性等问题对于整体性能都会造成影响。</p>
+<p>仅将Redis作为缓存应用，它与Memcached类似：</p>
+<ul>
+<li>使用Hash链表组织缓存数据（2级Hash计算），查询也通过Hash计算获取缓存数据位置。</li>
+<li>声称有多种替换策略（名称中包含LRU，TTL等），但本质都是Random策略，随机挑选几个缓存对象，比较其LRU或TTL值，并进行淘汰。LRU或TTL值有后台定期更新和访问时更新等方式。</li>
+<li>持久化特性一般针对数据库或消息队列等使用场景。</li>
+</ul>
+<p>无论是Memcached还是Redis，作为分布式缓存，都需要有一个仲裁角色（总控节点）对所有缓存节点进行管理和维护。这个角色的可用性必须特别关注，以免出现单点故障问题，一般通过多副本方式解决该问题，主从角色的变换和数据同步可通过一些分布式协议（Paxos，2PC等）进行处理。</p>
+<h3 id="4-5-Facebook-McDipper"><a href="#4-5-Facebook-McDipper" class="headerlink" title="4.5 Facebook McDipper"></a>4.5 Facebook McDipper</h3><p>Facebook除了提供单机的flashcache外，在分布式缓存领域，也推出了McDipper这种基于闪存的分布式缓存系统。一直以来，Facebook都是采用Memcached作为其MySQL数据库应用的缓存，但考虑到庞大的数据量以及相对昂贵的内存，Facebook将视角转向了闪存，尽管没有内存高效，但闪存依然能够提供较高性能，并且闪存设备容量大，价格也相对便宜，这使得基于闪存的软件层缓存变得非常有优势。在这种情况下，Facebook结合其flashcache的基础优势，将Memcached改造成了McDipper，协议及接口完全兼容，客户端及应用无需任何改动。</p>
+<p>在存储管理上，McDipper将闪存作为主要的缓存介质，内存作为中转，同时兼顾闪存的读写特点（见<code>4.2 Facebook flashcache</code>一节），以便发挥闪存设备的最佳性能。由于闪存的非易失性特点，天然的具有持久化特性，而持久化与性能之间是需要权衡的。另外，在与Memcached的协议兼容上，也不像想象中的那么简单，读写竞争，性能权衡和一致性等问题都给兼容带来了诸多的复杂性，而这些都是需要着重考虑的。</p>
+<p>McDipper目前并没有开源，更多的内部细节也没有呈现，不过McDipper已经被Facebook应用到它的图片基础设施架构中，反馈良好。McDipper给出了一条基于闪存的分布式缓存的道路，它基于Memecached进行修改的，但从上节可以看到，Redis具有更多特性，有更多的使用场景，如果结合闪存本身非易失性等特点，在一定程度上可以降低Redis的复杂性，实现一个更好的Redis。再以更进一步，甚至可以用闪存设备替代传统磁盘。可以想见，<strong>在分布式存储系统上，闪存存储将成为一个重要角色</strong>。</p>
+<h3 id="4-6-实例小结"><a href="#4-6-实例小结" class="headerlink" title="4.6 实例小结"></a>4.6 实例小结</h3><p>本章主要描述了一些缓存实现的例子及其要解决的问题，这些缓存实例可分为单机缓存系统和分布式缓存系统。由于近些年闪存技术的发展，闪存设备作为系统加速部件，也被不断的应用到多种缓存系统中。单机缓存系统包括了经典的Linux页高速缓存实现，以及基于闪存的flashcache和BCache实现。分布式缓存的代表性实现为Memcached，由于使用场景较为单一，Redis作为强劲的对手也在迅猛的发展过程中。同时，考虑到成本因素，Facebook实现了闪存版的Memcached，并用于其基础架构中，效果突出。</p>
+<p>从整个缓存系统的发展趋势上，可以看到，闪存即将在存储层次结构中占据重要位置，普通单机的存储能力将会变得非常强大，而这也将使得整系统的瓶颈极有可能从IO重新变成CPU。</p>
+<h2 id="5-缓存设计要点"><a href="#5-缓存设计要点" class="headerlink" title="5 缓存设计要点"></a>5 缓存设计要点</h2><p>上文描述了缓存的一些基础知识，可以看到，缓存在实现时，最基本的要素包括缓存相联方式，回写策略和替换策略等。算法策略和缓存实例也在上文中进行了介绍。除了这些基础知识，缓存系统在设计时，还会面临各种问题，而这些问题对缓存系统的可用性，一致性，容错能力以及性能都会产生影响。本章将着重介绍几个常见的问题。</p>
+<h3 id="5-1-缓存锁粒度"><a href="#5-1-缓存锁粒度" class="headerlink" title="5.1 缓存锁粒度"></a>5.1 缓存锁粒度</h3><p>为了实现缓存对象的查找，增删，回写等操作，同时兼顾效率问题，通常采用LRU链表，Hash链表或平衡树等数据结构来组织缓存对象。多线程环境下，就需要加锁才能进行缓存相关操作。在<code>3.3.2 Linux页面回收算法</code>一节中，我们已经提到，如果为了达到较精确的页面访问频率和时间间隔，就需要频繁的加锁才能操作相关数据结构，性能也就相应受到较大影响。为降低加锁带来的影响，Linux采用了这样的原则：<strong>牺牲精确度以减少加锁操作</strong>。在设计缓存系统时，具体的实现方式有多种：</p>
+<ul>
+<li>使用过渡式的数据结构来进行缓存对象的批量操作，无论是缓存对象的加入，取出，还是更新缓存对象的历史情况，尽可能成批操作。</li>
+<li>对于各缓存对象，并不立即更新它们在数据结构中的位置，而使用一些简单的原子操作（如计数，标志位等）来记录缓存对象的历史情况，真正的处理可放在批量操作中进行。</li>
+<li>细化数据结构，划分多个工作集，每个工作集有自己的锁管理，这样锁的粒度就更小，从而降低加锁带来的竞争和冲突。代价是工作集可能存在冷热不均衡的情况，无法全局管理，缓存管理的复杂度也随之增加。</li>
+</ul>
+<h3 id="5-2-缓存更新"><a href="#5-2-缓存更新" class="headerlink" title="5.2 缓存更新"></a>5.2 缓存更新</h3><p>以Memcached缓存系统为例，更新数据时，就面临选择：</p>
+<p><strong>更新缓存还是淘汰缓存？</strong></p>
+<p>淘汰缓存最简单，可以在后续的访问中再添加数据到缓存中，因此<strong>通常采用淘汰缓存的策略</strong>。</p>
+<p><strong>时序上，先更新共享存储，还是先淘汰缓存？</strong></p>
+<ul>
+<li>先淘汰缓存，后更新共享存储：当读写操作并发时，如果先淘汰缓存，而共享存储还未更新，这时读操作就可能将旧数据加入缓存，从而导致缓存了旧数据，数据一致性就存在问题。设计上，一般要求缓存对象有过期时间，以降低该问题带来的影响。</li>
+<li>先更新共享存储，后淘汰缓存：读写操作并发时，如果先读取了旧数据但未写入缓存，然后写操作更新共享存储后，淘汰了缓存，最后读操作再将旧数据写入缓存，这种情况下也导致了脏数据，也可通过设置过期时间来处理。但实际上，这种情况发生的概率极低，因为写操作的时间通常要远长于读操作。</li>
+<li>两种方式都存在问题，可根据业务情况自主选择。从发生的概率和影响的大小来看，<strong>建议先更新共享存储</strong>。</li>
+</ul>
+<p>在<code>2.3 缓存架构</code>一节中，提出了三种架构方式，Memcached缓存系统属于第一种，需要自己管理缓存和共享存储，也就带来的诸如以上的问题。其他的架构，在一致性问题的处理上则相对直接和简单。实际业务场景中，需要去权衡各种架构的优缺点，针对业务选择适合的架构。</p>
+<h3 id="5-3-缓存穿透和节点失效"><a href="#5-3-缓存穿透和节点失效" class="headerlink" title="5.3 缓存穿透和节点失效"></a>5.3 缓存穿透和节点失效</h3><p>一般情况下，至少有三个角色：应用本身，缓存系统和共享存储系统。通常，缓存系统需要处理绝大部分的访问，以降低共享存储系统的压力。而所谓的缓存穿透和节点失效，可以简单的理解为缓存系统没有起到相应作用，绝大部分（甚至是全部）的访问直接导向共享存储系统，从而引发共享存储系统过载，整体统无法正常响应。</p>
+<p><img src="https://xupifu.github.io/assets/cache-stampede.png" alt="图：缓存穿透和节点失效"></p>
+<p>造成以上现象的原因主要有：</p>
+<ul>
+<li>缓存系统无法连接或本身出现系统故障。</li>
+<li>缓存系统重新恢复时，如果其中的数据大部分或全部不可用，将引发大量对共享存储系统的访问。</li>
+<li>缓存对象过期，尤其是热点数据的过期，可能引发大量的瞬间访问。</li>
+<li>应用访问超时或失败后，可能会不断重试，导致请求短时间内增多，整系统需面临比正常情况下更多的请求，可能引发雪崩效应。</li>
+</ul>
+<p>出现问题后的处理方式主要有：</p>
+<ul>
+<li>缓存过期处理：过期时间的设置要相对随机，避免过期集中出现。</li>
+<li>缓存系统预热：缓存系统重新恢复时，预热过程需与共享存储系统配合好，以免引发系统过载。</li>
+<li>同一缓存访问：如出现多个线程访问同一缓存，而缓存对象无法命中（或需过期更新），不必发出多个相同请求到共享存储系统，一个即可。注意：复杂度会增加，需要跟踪访问同一缓存对象的线程。</li>
+<li>共享存储系统：进行流量控制（或提供有限服务），量力而为，对于明显超时的请求（如：队列已满，再来的请求判定为肯定超时）可直接返回失败，以保证系统基本处理能力，最小化过载影响。</li>
+</ul>
+<h2 id="6-总结"><a href="#6-总结" class="headerlink" title="6 总结"></a>6 总结</h2><p>为了弥补各层次存储设备之间的性能差距，缓存，在局部性原理的基础上，成为了提高系统性能的一个重要技术手段。CPU缓存就是一个非常有效的技术实现，从中，我们可以看到，缓存实现时的基本要素，比如缓存的映射方式，回写策略，替换策略，缓存一致性等。随着计算机技术的发展，缓存已经不局限于硬件实现了，在软件层的实现越来越多，作用也越来越大。在CPU缓存的实现基础上，我们从软件层的角度出发，梳理出了缓存的基本模型和缓存的一些基本架构，并且探讨了用于实现缓存设计的常见算法和策略。现实例子也非常丰富，从单机缓存系统到分布式缓存系统，我们可以看到缓存的基本要素是如何具体实现的，但同时，我们也看到了缓存设计时的一些常见问题和思考，比如缓存系统的性能问题，更新策略，缓存穿透和失效等。CAP理论是分布式存储的一个总结，它涵盖了以上的思考，尽管不能适用于所有场景，但依然告诉我们，缓存设计是无法做到十全十美的，它需要权衡和舍弃。</p>
+<p>缓存，作为存储系统的一个部件，无处不在，尤其在分布式存储系统中发挥了重要作用。分布式存储通常被分类为结构化存储（SQL），非结构化存储（分布式文件系统），半结构化存储和In-memory存储（NoSQL，KV-Cache），后两种便是分布式缓存实现的主要形式，一般以内存介质作为载体进行实现。不过，随着这几年闪存技术的发展，基于闪存的缓存系统也在不断出现。以往基于磁盘设计的存储系统（比如文件系统，数据库），为了适应闪存带来的变化，也在不断发展中。从发展趋势上看，闪存即将在存储层次结构中占据重要位置，普通单机的存储能力将会变得非常强大，而这也将使得整系统的瓶颈极有可能从IO重新变成CPU。同时，闪存的高性能和持久化特性，也有望降低目前分布式存储系统的实现复杂度（性能，扩展性和容错等是影响分布式系统复杂度的主要因素）。</p>
+<h2 id="7-参考文章"><a href="#7-参考文章" class="headerlink" title="7 参考文章"></a>7 参考文章</h2><ol>
+<li><a href="http://blog.codinglabs.org/articles/theory-of-mysql-index.html" target="_blank" rel="external">MySQL索引背后的数据结构及算法原理</a></li>
+<li><a href="http://www.cnblogs.com/zhaoyl/p/3695517.html" target="_blank" rel="external">Linux内存管理原理</a></li>
+<li><a href="http://www.codeproject.com/Articles/56138/Consistent-hashing" target="_blank" rel="external">一致性哈希</a></li>
+<li><a href="http://coolshell.cn/articles/10910.html" target="_blank" rel="external">分布式系统的事务处理</a></li>
+<li><a href="http://coolshell.cn/articles/17416.html" target="_blank" rel="external">缓存更新的套路</a></li>
+<li><a href="http://blog.jobbole.com/85185/" target="_blank" rel="external">关于CPU Cache：程序猿需要知道的那些</a></li>
+<li><a href="">大规模分布式存储系统：原理解析与架构实战</a></li>
+<li><a href="http://db-engines.com/en/system/Memcached%3BMongoDB%3BRedis" target="_blank" rel="external">Memcached vs. MongoDB vs. Redis</a></li>
+<li><a href="https://pommi.nethuis.nl/ssd-caching-using-linux-and-bcache" target="_blank" rel="external">bcache</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Cache_%28computing%29" target="_blank" rel="external">维基百科对Cache的定义</a></li>
+</ol>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/cache/" rel="tag"># cache</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/01/how-db-work/" rel="next" title="数据库基本工作方式">
+                <i class="fa fa-chevron-left"></i> 数据库基本工作方式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/02/10/sysbench-oltp-benchmark/" rel="prev" title="Sysbench OLTP Benchmark">
+                Sysbench OLTP Benchmark <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="蚍蜉" />
+          <p class="site-author-name" itemprop="name">蚍蜉</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-缓存概念"><span class="nav-text">1. 缓存概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-基本定义"><span class="nav-text">1.1 基本定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-缓存的由来"><span class="nav-text">1.2 缓存的由来</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-缓存基本要素"><span class="nav-text">1.3 缓存基本要素</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-缓存一致性"><span class="nav-text">1.4 缓存一致性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-5-小结"><span class="nav-text">1.5 小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Cache基本模型"><span class="nav-text">2 Cache基本模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-缓存模型概述"><span class="nav-text">2.1 缓存模型概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-CAP"><span class="nav-text">2.2 CAP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-缓存架构"><span class="nav-text">2.3 缓存架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-小结"><span class="nav-text">2.4 小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-缓存相关算法"><span class="nav-text">3 缓存相关算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Consistent-Hashing算法"><span class="nav-text">3.1 Consistent Hashing算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-查找算法"><span class="nav-text">3.2 查找算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-替换算法"><span class="nav-text">3.3 替换算法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-1-替换算法概述"><span class="nav-text">3.3.1 替换算法概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-2-Linux页面回收算法"><span class="nav-text">3.3.2 Linux页面回收算法</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-3-Random替换策略"><span class="nav-text">3.3.3 Random替换策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-4-替换算法小结"><span class="nav-text">3.3.4 替换算法小结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Cache实例"><span class="nav-text">4 Cache实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-Linux-Page-Cache"><span class="nav-text">4.1 Linux Page Cache</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-1-页面组织"><span class="nav-text">4.1.1 页面组织</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-2-脏页回写"><span class="nav-text">4.1.2 脏页回写</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-3-预读策略"><span class="nav-text">4.1.3 预读策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-4-替换策略"><span class="nav-text">4.1.4 替换策略</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-5-Page-Cache小结"><span class="nav-text">4.1.5 Page Cache小结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-Facebook-flashcache"><span class="nav-text">4.2 Facebook flashcache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-Linux-BCache"><span class="nav-text">4.3 Linux BCache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-4-Memcached"><span class="nav-text">4.4 Memcached</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-5-Facebook-McDipper"><span class="nav-text">4.5 Facebook McDipper</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-6-实例小结"><span class="nav-text">4.6 实例小结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-缓存设计要点"><span class="nav-text">5 缓存设计要点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-缓存锁粒度"><span class="nav-text">5.1 缓存锁粒度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-缓存更新"><span class="nav-text">5.2 缓存更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-缓存穿透和节点失效"><span class="nav-text">5.3 缓存穿透和节点失效</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-总结"><span class="nav-text">6 总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-参考文章"><span class="nav-text">7 参考文章</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017 - 至今 </span>
+  <span class="author" itemprop="copyrightHolder">版权所有，任何转载请注明来源，商业转载请联系作者 [蚍蜉] </span>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>

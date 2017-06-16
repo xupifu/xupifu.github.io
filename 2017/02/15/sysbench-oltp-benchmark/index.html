@@ -1,0 +1,1035 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="benchmark," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="Original link: http://www.storagereview.com/sysbench_oltp_benchmark
+The Sysbench OLTP application benchmark runs on top of a MySQL database running the InnoDB storage engine. The job of the storage en">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Sysbench OLTP Benchmark">
+<meta property="og:url" content="http://xupifu.github.io/2017/02/15/sysbench-oltp-benchmark/index.html">
+<meta property="og:site_name" content="蚍蜉小站">
+<meta property="og:description" content="Original link: http://www.storagereview.com/sysbench_oltp_benchmark
+The Sysbench OLTP application benchmark runs on top of a MySQL database running the InnoDB storage engine. The job of the storage en">
+<meta property="og:image" content="http://www.storagereview.com/images/mysql-innodb-disk-memory-layout.png">
+<meta property="og:updated_time" content="2017-02-25T06:05:51.080Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Sysbench OLTP Benchmark">
+<meta name="twitter:description" content="Original link: http://www.storagereview.com/sysbench_oltp_benchmark
+The Sysbench OLTP application benchmark runs on top of a MySQL database running the InnoDB storage engine. The job of the storage en">
+<meta name="twitter:image" content="http://www.storagereview.com/images/mysql-innodb-disk-memory-layout.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://xupifu.github.io/2017/02/15/sysbench-oltp-benchmark/"/>
+
+
+
+
+
+  <title> Sysbench OLTP Benchmark | 蚍蜉小站 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">蚍蜉小站</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://xupifu.github.io/2017/02/15/sysbench-oltp-benchmark/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="蚍蜉">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="蚍蜉小站">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="蚍蜉小站" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Sysbench OLTP Benchmark
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-02-15T19:39:11+08:00">
+                2017-02-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/storage/" itemprop="url" rel="index">
+                    <span itemprop="name">storage</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Original link: <a href="http://www.storagereview.com/sysbench_oltp_benchmark" target="_blank" rel="external">http://www.storagereview.com/sysbench_oltp_benchmark</a></p>
+<p>The Sysbench OLTP application benchmark runs on top of a MySQL database running the InnoDB storage engine. The job of the storage engine is to manage the interface from the on-disk database to the applications reading and writing data to and from the storage engine. The storage engine in turn manages IO threads and logs, and it keeps an in-memory cache to minimize disk access. <a id="more"></a>The chart below gives a simplistic overview of the engine.</p>
+<p><img src="http://www.storagereview.com/images/mysql-innodb-disk-memory-layout.png" alt=""></p>
+<p>Since the InnoDB engine keeps an in-memory cache called the buffer pool, performance wil be directly affected by the ratio of the working set size to the size of the buffer pool. In other words, if the buffer pool is large enough to hold the working set or the working set is small enough to fit in the buffer pool, most operations will never be IO bound. However, if the database is too large to fit into memory, then IO performance will dictate transactional response times and throughput. We are characterizing the performance of the drive in this situation where the database does not fit in memory, which leads to increased IO traffic from the InnoDB storage engine.</p>
+<p>Multiple threads (the number depends on database configuration for high performance applications and varies from 32 to 128) read data in a random fashion from the backing store with a block size of 16Kbytes. These reads are related to database queries requesting data from the backing store. As reads are processed, they are automatically cached in the buffer pool. As the buffer pool fills up, InnoDB uses a LRU (Least Recently Used) policy to evict older pages to make room for newer data.</p>
+<p>Database writes are first directed to the transaction log and to the buffer pool. The transaction log is a sequentially written ring buffer that is updated for every write transaction. Depending on the MySQL configuration, this update can lead to an immediate on-disk write, or it can persist temporarily in RAM as a buffer that is eventually flushed to disk by the file system. The size of this log buffer varies, but is usually around 256MB. Recommended settings for ACID compliance require that the log writes hit the disk on every database commit. These writes are 4K in length.</p>
+<p>The log only does “physiological” writes where the delta between the previous data and the new data is written. For the original data, InnoDB writes to the buffer pool in RAM, which has to be drained asynchronously as well. The process of writing out the data back to the file system is configurable and occurs in the background. The writes are also 16K. The writes are actually double-writes where the engine first writes the data into an intermediary location called the double-write buffer. The engine then copies that data into its final location in the file system. This is necessary to avoid the “torn page” problem where a 16KB database page is partially written to disk due to a power loss or other catastrophic event.</p>
+<h2 id="Origins-of-the-Sysbench-Benchmark"><a href="#Origins-of-the-Sysbench-Benchmark" class="headerlink" title="Origins of the Sysbench Benchmark"></a>Origins of the Sysbench Benchmark</h2><p>We brought the Sysbench test setup into our lab after several conversations with <a href="http://www.micron.com/products/solid-state-storage" target="_blank" rel="external">Micron</a> about how they simulate real-world MySQL application environments for SSD testing and measurement. They developed a test methodology around Sysbench after finding that synthetic storage benchmarks rarely provided a complete view of how a drive will behave when under a particular application workload. The Sysbench test allows Micron to simulate an environment that most closely represents a standard MySQL database workload, which are prevalent in applications such as Facebook, Craigslist and Booking.com</p>
+<p>We worked particularly closely with Moussa Ba, who helped co-author this article. Moussa is a software engineer on Micron’s PCIe development team where his work includes application and system software optimization for high performance IO devices.</p>
+<h2 id="Sysbench-OLTP-Benchmark"><a href="#Sysbench-OLTP-Benchmark" class="headerlink" title="Sysbench OLTP Benchmark"></a>Sysbench OLTP Benchmark</h2><p>Sysbench is a system performance benchmark that includes an OnLine Transaction Processing (OLTP) test profile. The OLTP test is not an approximation of an OLTP test, but is rather a true database-backed benchmark that conducts transactional queries to an instance of MySQL in a CentOS environment.</p>
+<p>The first step in setting up the benchmark is to create the database itself, which is done by specifying the number of tables in the database as well the number of rows per table. In our test, we defined 100 tables with 10 million rows each, which resulted in a database of 1 billion entries. This database was 260GB.</p>
+<p>Sysbench has two operating modes: default mode which reads and writes to the database and a readonly mode. The default R/W mode will execute the following query types: 5 SELECT queries, 2 UPDATE queries, 1 DELETE query and 1 INSERT. Looking at IO counts, the observed read/write ratio is about 75% reads and 25% writes.</p>
+<h2 id="Sysbench-Testing-Environment"><a href="#Sysbench-Testing-Environment" class="headerlink" title="Sysbench Testing Environment"></a>Sysbench Testing Environment</h2><p>Storage solutions are tested with the Sysbench OLTP benchmark in the <a href="http://www.storagereview.com/storagereview_enterprise_test_lab" target="_blank" rel="external">StorageReview Enterprise Test Lab</a> utilizing stand-alone servers. We currently utilize off-the-shelf channel PowerEdge R730s from Dell to show both realistic performance and a solid price/performance ratio, changing only the storage adapter or network interface to connect our R730 to different storage products. The PowerEdge R730 has proven itself to offer great compatibility with third-party devices, making it an excellent go-to platform for this diverse testing environment. The R730 also leverages Intel’s powerful Haswell-class architecture, which gives us the compute power to properly stress a wide range of storage offerings and maximize their performance potential. </p>
+<h3 id="First-Generation-Sysbench-Benchmark-Environment"><a href="#First-Generation-Sysbench-Benchmark-Environment" class="headerlink" title="First Generation Sysbench Benchmark Environment"></a>First Generation Sysbench Benchmark Environment</h3><p><a href="http://www.storagereview.com/lenovo_thinkserver_rd630_review" target="_blank" rel="external">Lenovo ThinkServer RD630</a> - SATA/SAS/PCIe Testing Platform</p>
+<ul>
+<li>2594-ABU Topseller Model</li>
+<li>Dual Intel E5-2650 CPUs (2.0GHz, 8-cores, 20MB Cache)</li>
+<li>128GB RAM (8GB x 16 DDR3, 64GB per CPU)</li>
+<li>100GB Micron <a href="http://www.storagereview.com/micron_realssd_p400e_enterprise_ssd_review" target="_blank" rel="external">RealSSD P400e SSD</a> (via LSI 9207-8i) Boot Drive</li>
+<li>960GB Micron M500 (via 9207-8i) Pre-built Database Storage</li>
+<li>CentOS 6.3 64-bit</li>
+<li>Percona XtraDB 5.5.30-rel30.1<ul>
+<li>Database Tables: 100</li>
+<li>Database Size: 10,000,000</li>
+<li>Database Threads: 32</li>
+<li>RAM Buffer: 24GB</li>
+</ul>
+</li>
+</ul>
+<h3 id="Second-Generation-Sysbench-Benchmark-Environment"><a href="#Second-Generation-Sysbench-Benchmark-Environment" class="headerlink" title="Second Generation Sysbench Benchmark Environment"></a>Second Generation Sysbench Benchmark Environment</h3><p>Dell PowerEdge R730 - SATA/SAS/PCIe Testing Platform</p>
+<ul>
+<li>Dual Intel E5-2690 v3 CPUs (2.6GHz, 12-cores, 30MB Cache) </li>
+<li>256GB RAM (16GB x 16 DDR4, 128GB per CPU)</li>
+<li>100GB Boot SSD, 480GB Database Storage SSD</li>
+<li>2 x Mellanox ConnectX-3 InfiniBand Adapter</li>
+<li>2 x <a href="http://www.storagereview.com/emulex_lightpulse_gen5_16gb_fibre_channel_hba_review" target="_blank" rel="external">Emulex 16GB dual-port FC HBA</a></li>
+<li>2 x <a href="http://www.storagereview.com/emulex_oneconnect_oce11102nt_review" target="_blank" rel="external">Emulex 10GbE dual-port NIC</a></li>
+<li>CentOS 6.6 64-bit</li>
+<li>Percona XtraDB 5.5.30-rel30.1<ul>
+<li>Database Tables: 100</li>
+<li>Database Size: 10,000,000</li>
+<li>Database Threads: 32</li>
+<li>RAM Buffer: 24GB</li>
+</ul>
+</li>
+</ul>
+<p>Dell PowerEdge R730 Virtualized Sysbench 4-node Cluster</p>
+<ul>
+<li>Eight Intel E5-2690 v3 CPUs for 249GHz in cluster (Two per node, 2.6GHz, 12-cores, 30MB Cache) </li>
+<li>1TB RAM (256GB per node, 16GB x 16 DDR4, 128GB per CPU)</li>
+<li>SD Card Boot (Lexar 16GB)</li>
+<li>4 x Mellanox ConnectX-3 InfiniBand Adapter (vSwitch for vMotion and VM network)</li>
+<li>4 x <a href="http://www.storagereview.com/emulex_lightpulse_gen5_16gb_fibre_channel_hba_review" target="_blank" rel="external">Emulex 16GB dual-port FC HBA</a></li>
+<li>4 x <a href="http://www.storagereview.com/emulex_oneconnect_oce11102nt_review" target="_blank" rel="external">Emulex 10GbE dual-port NIC</a></li>
+<li>VMware ESXi vSphere 6.0 / Enterprise Plus 8-CPU</li>
+</ul>
+<p>The main goal with this platform is highlighting how enterprise storage performs in an actual enterprise environment and workload, instead of relying on synthetic or pseudo-synthetic workloads. Synthetic workload generators are great at showing how well storage devices perform with a continuous synthetic I/O pattern, but they don’t take into consideration any of the other outside variables that illuminate how devices actually work in production environments. Synthetic workload generators have the benefit of showing a clean I/O pattern time and time again, but they won’t ever replicate a true production environment. Introducing application performance on top of storage products begins to show how well the storage interacts with its drivers, the local operating system, the application being tested, the network stack, the networking switching and external servers. These are variables that a synthetic workload generator simply can’t take into account, and they are also an order of magnitude more resource- and infrastructure-intensive in terms of the equipment required to execute this particular benchmark.</p>
+<h2 id="Overall-Sysbench-Performance-Results"><a href="#Overall-Sysbench-Performance-Results" class="headerlink" title="Overall Sysbench Performance Results"></a>Overall Sysbench Performance Results</h2><p>We test a wide range of storage solutions with the Sysbench OLTP benchmark that meet the minimum requirements of the testing environment. To qualify for testing, the storage device must have a usable capacity exceeding 260GB and be geared towards operating under stressful enterprise conditions. Locally-attached storage devices such as SAS, SATA and PCIe SSDs are tested on a bare-metal server with one Sysbench instance. Newer SAN and Hyper-converged platforms run either 4, 8, 12 or 16 VMs simultaneously to show how well multiple workloads operate at the same time on each. This testing methology helps demystify the performance comparisons between newer hyper-converged systems against traditional SAN storage arrays.</p>
+<h3 id="Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-16-VM-Aggregate"><a href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-16-VM-Aggregate" class="headerlink" title="Hyper-Converged / SAN Virtualized Sysbench Performance Results (16 VM Aggregate)"></a>Hyper-Converged / SAN Virtualized Sysbench Performance Results (16 VM Aggregate)</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Aggregate TPS</th>
+<th>Average Response Time (ms)</th>
+<th>99th Percentile Latency (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/xio_technologies_ise_860_g3_review_part_1" target="_blank" rel="external">X-IO ISE 860</a><br>(4) Dell R730, X-IO ISE 860 AFA<br>(2) 10TB Volumes</td>
+<td>6625</td>
+<td>80</td>
+<td>418</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-12-VM-Aggregate"><a href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-12-VM-Aggregate" class="headerlink" title="Hyper-Converged / SAN Virtualized Sysbench Performance Results (12 VM Aggregate)"></a>Hyper-Converged / SAN Virtualized Sysbench Performance Results (12 VM Aggregate)</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Aggregate TPS</th>
+<th>Average Response Time (ms)</th>
+<th>99th Percentile Latency (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/xio_technologies_ise_860_g3_review_part_1" target="_blank" rel="external">X-IO ISE 860</a><br>(4) Dell R730, X-IO ISE 860 AFA<br>(2) 10TB Volumes</td>
+<td>7160</td>
+<td>54</td>
+<td>177</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-8-VM-Aggregate"><a href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-8-VM-Aggregate" class="headerlink" title="Hyper-Converged / SAN Virtualized Sysbench Performance Results (8 VM Aggregate)"></a>Hyper-Converged / SAN Virtualized Sysbench Performance Results (8 VM Aggregate)</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Aggregate TPS</th>
+<th>Average Response Time (ms)</th>
+<th>99th Percentile Latency (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/xio_technologies_ise_860_g3_review_part_1" target="_blank" rel="external">X-IO ISE 860</a><br>(4) Dell R730, X-IO ISE 860 AFA<br>(2) 10TB Volumes</td>
+<td>6568</td>
+<td>39</td>
+<td>83</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/vmware_virtual_san_review_sysbench_oltp_performance" target="_blank" rel="external">VMware VSAN (ESXi 6.0)</a><br>(4) Dell R730xd, 80 1.2TB HDDs, 16 800GB SSDs</td>
+<td>4259</td>
+<td>60</td>
+<td>131</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-4-VM-Aggregate"><a href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-4-VM-Aggregate" class="headerlink" title="Hyper-Converged / SAN Virtualized Sysbench Performance Results (4 VM Aggregate)"></a>Hyper-Converged / SAN Virtualized Sysbench Performance Results (4 VM Aggregate)</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Aggregate TPS</th>
+<th>Average Response Time (ms)</th>
+<th>99th Percentile Latency (ms)</th>
+<th>Peak Latency (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/dot_hill_assuredsan_ultra48_hybrid_review" target="_blank" rel="external">DotHill Ultra48 Hybrid</a><br>(4) Dell R730, DotHill Ultra48 Hybrid<br>(2) 14-disk RAID1 Pools, 40 1.8TB HDDs, 8 400GB SSDs</td>
+<td>4645</td>
+<td>28</td>
+<td>51</td>
+<td>676</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/xio_technologies_ise_860_g3_review_part_1" target="_blank" rel="external">X-IO ISE 860</a><br>(4) Dell R730, X-IO ISE 860 AFA<br>(2) 10TB Volumes</td>
+<td>4424</td>
+<td>29</td>
+<td>57</td>
+<td>983</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/vmware_virtual_san_review_sysbench_oltp_performance" target="_blank" rel="external">VMware VSAN (ESXi 6.0)</a><br>(4) Dell R730xd, 80 1.2TB HDDs, 16 800GB SSDs</td>
+<td>2830</td>
+<td>45</td>
+<td>94</td>
+<td>480</td>
+</tr>
+<tr>
+<td>Nutanix NX-8150 (ESXi 6.0)<br>(4) NX-8150, 80 1TB HDDs, 16 800GB SSDs RAID0 x 4 vDisk Database Volume</td>
+<td>2390</td>
+<td>54</td>
+<td>173</td>
+<td>4784</td>
+</tr>
+<tr>
+<td>Nutanix NX-8150 (ESXi 6.0)<br>(4) NX-8150, 80 1TB HDDs, 16 800GB SSDs Default Database Deployment</td>
+<td>1422</td>
+<td>90</td>
+<td>216</td>
+<td>5508</td>
+</tr>
+</tbody>
+</table>
+<h3 id="PCIe-Application-Accelerator-Multi-SSD-HDD-RAID-Sysbench-Performance-Results"><a href="#PCIe-Application-Accelerator-Multi-SSD-HDD-RAID-Sysbench-Performance-Results" class="headerlink" title="PCIe Application Accelerator / Multi-SSD/HDD RAID Sysbench Performance Results"></a>PCIe Application Accelerator / Multi-SSD/HDD RAID Sysbench Performance Results</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Average TPS</th>
+<th>Average Response Time</th>
+<th>99th Percentile Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/huawei_tecal_es3000_application_accelerator_review" target="_blank" rel="external">Huawei ES3000 2.4TB</a><br>MLC PCIe SSD x 1</td>
+<td>2734.69</td>
+<td>11.7</td>
+<td>19.84</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/huawei_tecal_es3000_application_accelerator_review" target="_blank" rel="external">Huawei ES3000 1.2TB</a><br>MLC PCIe SSD x 1</td>
+<td>2615.12</td>
+<td>12.23</td>
+<td>21.80</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/fusionio_iodrive2_duo_mlc_application_accelerator_review" target="_blank" rel="external">Fusion ioDrive2 Duo 2.4TB</a><br>MLC PCIe SSD x 1</td>
+<td>2521.06</td>
+<td>12.69</td>
+<td>23.92</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/micron_realssd_p320h_enterprise_pcie_review" target="_blank" rel="external">Micron P320h 700GB</a><br>SLC PCIe SSD x 1</td>
+<td>2443.56</td>
+<td>13.09</td>
+<td>22.45</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/micron_p420m_enterprise_pcie_ssd_review" target="_blank" rel="external">Micron P420m 1.4TB</a><br>MLC PCIe SSD x 1</td>
+<td>2361.29</td>
+<td>13.55</td>
+<td>25.84</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/fusionio_iodrive2_duo_mlc_application_accelerator_review" target="_blank" rel="external">Fusion ioDrive2 1.2TB</a><br>MLC PCIe SSD x 1</td>
+<td>2354.06</td>
+<td>13.59</td>
+<td>29.35</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/virident_flashmax_ii_mlc_application_accelerator_review_22tb" target="_blank" rel="external">Virident FlashMAX II 2.2TB</a><br>MLC PCIe SSD x 1</td>
+<td>2278.11</td>
+<td>14.04</td>
+<td>26.04</td>
+</tr>
+<tr>
+<td>LSI Nytro WarpDrive 800GB<br>MLC PCIe SSD x 1</td>
+<td>1977.67</td>
+<td>16.18</td>
+<td>39.94</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/lsi_nytro_warpdrive_blp4400_application_accelerator_review" target="_blank" rel="external">LSI Nytro WarpDrive 400GB</a><br>MLC PCIe SSD x 1</td>
+<td>1903.14</td>
+<td>16.81</td>
+<td>39.30</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Individual-SAS-SATA-SSD-Results"><a href="#Individual-SAS-SATA-SSD-Results" class="headerlink" title="Individual SAS / SATA SSD Results"></a>Individual SAS / SATA SSD Results</h3><table>
+<thead>
+<tr>
+<th>Device</th>
+<th>32-Thread Average TPS</th>
+<th>Average Response Time</th>
+<th>99th Percentile Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://www.storagereview.com/toshiba_hk3r2_review" target="_blank" rel="external">Toshiba HK3R2 960GB</a><br>MLC SATA x 1</td>
+<td>1673.23</td>
+<td>19.12</td>
+<td>49.65</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/sandisk_cloudspeed_eco_review" target="_blank" rel="external">SanDisk CloudSpeed Eco 960GB</a><br>cMLC SATA x 1</td>
+<td>1556.99</td>
+<td>20.55</td>
+<td>49.05</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/intel_ssd_dc_s3700_series_enterprise_ssd_review" target="_blank" rel="external">Intel S3700 800GB</a><br>eMLC SATA x 1</td>
+<td>1488.71</td>
+<td>21.49</td>
+<td>40</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/toshiba_px02sm_series_enterprise_ssd_review" target="_blank" rel="external">Toshiba PX02SM 400GB</a><br>eMLC SAS (6Gb/s) x 1</td>
+<td>1487.03</td>
+<td>21.52</td>
+<td>62.02</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/smart_storage_systems_optimus_sas_enterprise_ssd_review" target="_blank" rel="external">Smart Optimus 400GB</a><br>eMLC SAS x 1</td>
+<td>1477.1</td>
+<td>21.66</td>
+<td>52.69</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/ocz_talos_2_enterprise_ssd_review" target="_blank" rel="external">OCZ Talos 2 C 480GB</a><br>MLC SAS x 1</td>
+<td>1438.7</td>
+<td>22.24</td>
+<td>47.32</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/ocz_intrepid_3600_ssd_review" target="_blank" rel="external">OCZ Intrepid 3600 400GB</a><br>eMLC SAS x 1</td>
+<td>1335.3</td>
+<td>23.96</td>
+<td>48.42</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/ocz_talos_2_enterprise_ssd_review" target="_blank" rel="external">OCZ Talos 2 R 400GB</a><br>eMLC SAS x 1</td>
+<td>1421.15</td>
+<td>22.51</td>
+<td>45.06</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/sandisk_extreme_ssd_review" target="_blank" rel="external">SanDisk Extreme 480GB</a><br>MLC SATA x 1</td>
+<td>1303.48</td>
+<td>24.55</td>
+<td>53.56</td>
+</tr>
+<tr>
+<td>STEC s842 800GB<br>eMLC SAS x 1</td>
+<td>1293.56</td>
+<td>24.74</td>
+<td>67.20</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/toshiba_hg6_ssd_review" target="_blank" rel="external">Intel S3500 512GB</a><br>eMLC SATA x 1</td>
+<td>1,287.65</td>
+<td>24.85</td>
+<td>64.15</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/intel_ssd_dc_s3500_enterprise_review" target="_blank" rel="external">Intel S3500 480GB</a><br>eMLC SATA x 1</td>
+<td>1241.59</td>
+<td>25.77</td>
+<td>54.27</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/seagate_600_pro_enterprise_ssd_review" target="_blank" rel="external">Seagate 600 Pro 400GB</a><br>eMLC SATA x 1</td>
+<td>1198.2</td>
+<td>26.7</td>
+<td>62.69</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/hitachi_ultrastar_ssd400sb_enterprise_ssd_review" target="_blank" rel="external">Hitachi SSD400S.B 400GB</a><br>SLC SAS x 1</td>
+<td>1191.47</td>
+<td>26.85</td>
+<td>47.87</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/ocz_vector_ssd_review" target="_blank" rel="external">OCZ Vector 512GB</a><br>MLC SATA x 1</td>
+<td>1130.03</td>
+<td>28.32</td>
+<td>62.67</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/sandisk_extreme_ii_ssd_review" target="_blank" rel="external">SanDisk Extreme II 480GB</a><br>MLC SATA x 1</td>
+<td>981.34</td>
+<td>32.61</td>
+<td>102.58</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/hitachi_ultrastar_ssd400m_enterprise_ssd_review" target="_blank" rel="external">Hitachi SSD400M</a><br>eMLC SAS x 1</td>
+<td>878.9</td>
+<td>36.41</td>
+<td>68.03</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/toshiba_mkx001grzb_enterprise_ssd_review" target="_blank" rel="external">Toshiba eSSD</a><br>SLC SAS x 1</td>
+<td>758.41</td>
+<td>42.19</td>
+<td>140.59</td>
+</tr>
+<tr>
+<td><a href="http://www.storagereview.com/micron_m500_enterprise_ssd_review" target="_blank" rel="external">Micron M500 480GB</a><br>MLC SATA x 1</td>
+<td>668.6</td>
+<td>47.86</td>
+<td>461.80</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/benchmark/" rel="tag"># benchmark</a>
+          
+        </div>
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/01/how-db-work/" rel="next" title="数据库基本工作方式">
+                <i class="fa fa-chevron-left"></i> 数据库基本工作方式
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="蚍蜉" />
+          <p class="site-author-name" itemprop="name">蚍蜉</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Origins-of-the-Sysbench-Benchmark"><span class="nav-number">1.</span> <span class="nav-text">Origins of the Sysbench Benchmark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sysbench-OLTP-Benchmark"><span class="nav-number">2.</span> <span class="nav-text">Sysbench OLTP Benchmark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sysbench-Testing-Environment"><span class="nav-number">3.</span> <span class="nav-text">Sysbench Testing Environment</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#First-Generation-Sysbench-Benchmark-Environment"><span class="nav-number">3.1.</span> <span class="nav-text">First Generation Sysbench Benchmark Environment</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Second-Generation-Sysbench-Benchmark-Environment"><span class="nav-number">3.2.</span> <span class="nav-text">Second Generation Sysbench Benchmark Environment</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overall-Sysbench-Performance-Results"><span class="nav-number">4.</span> <span class="nav-text">Overall Sysbench Performance Results</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-16-VM-Aggregate"><span class="nav-number">4.1.</span> <span class="nav-text">Hyper-Converged / SAN Virtualized Sysbench Performance Results (16 VM Aggregate)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-12-VM-Aggregate"><span class="nav-number">4.2.</span> <span class="nav-text">Hyper-Converged / SAN Virtualized Sysbench Performance Results (12 VM Aggregate)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-8-VM-Aggregate"><span class="nav-number">4.3.</span> <span class="nav-text">Hyper-Converged / SAN Virtualized Sysbench Performance Results (8 VM Aggregate)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyper-Converged-SAN-Virtualized-Sysbench-Performance-Results-4-VM-Aggregate"><span class="nav-number">4.4.</span> <span class="nav-text">Hyper-Converged / SAN Virtualized Sysbench Performance Results (4 VM Aggregate)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PCIe-Application-Accelerator-Multi-SSD-HDD-RAID-Sysbench-Performance-Results"><span class="nav-number">4.5.</span> <span class="nav-text">PCIe Application Accelerator / Multi-SSD/HDD RAID Sysbench Performance Results</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Individual-SAS-SATA-SSD-Results"><span class="nav-number">4.6.</span> <span class="nav-text">Individual SAS / SATA SSD Results</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017 - 至今 </span>
+  <span class="author" itemprop="copyrightHolder">版权所有，任何转载请注明来源，商业转载请联系作者 [蚍蜉] </span>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>

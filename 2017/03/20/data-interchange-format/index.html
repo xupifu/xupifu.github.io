@@ -1,0 +1,749 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="存储,缓存,开源技术" />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="本文将罗列几种常见的数据交换方式，数据交换常用于平台或语言无关化的接口调用，配置文件，数据存储等场景。数据交换的方式主要包括XML，JSON，YAML，Protobuf等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据交换 - XML, JSON, ProtoBuf">
+<meta property="og:url" content="http://xupifu.github.io/2017/03/20/data-interchange-format/index.html">
+<meta property="og:site_name" content="蚍蜉小分队">
+<meta property="og:description" content="本文将罗列几种常见的数据交换方式，数据交换常用于平台或语言无关化的接口调用，配置文件，数据存储等场景。数据交换的方式主要包括XML，JSON，YAML，Protobuf等。">
+<meta property="og:updated_time" content="2017-04-20T03:32:48.522Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="数据交换 - XML, JSON, ProtoBuf">
+<meta name="twitter:description" content="本文将罗列几种常见的数据交换方式，数据交换常用于平台或语言无关化的接口调用，配置文件，数据存储等场景。数据交换的方式主要包括XML，JSON，YAML，Protobuf等。">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://xupifu.github.io/2017/03/20/data-interchange-format/"/>
+
+
+
+
+
+  <title> 数据交换 - XML, JSON, ProtoBuf | 蚍蜉小分队 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">蚍蜉小分队</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-storage">
+          <a href="/categories/storage" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            存储技术
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+  <link itemprop="mainEntityOfPage" href="http://xupifu.github.io/2017/03/20/data-interchange-format/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="蚍蜉">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="蚍蜉小分队">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="蚍蜉小分队" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                数据交换 - XML, JSON, ProtoBuf
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-20T19:25:55+08:00">
+                2017-03-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/misc/" itemprop="url" rel="index">
+                    <span itemprop="name">misc</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本文将罗列几种常见的数据交换方式，数据交换常用于平台或语言无关化的接口调用，配置文件，数据存储等场景。数据交换的方式主要包括XML，JSON，YAML，Protobuf等。</p>
+<a id="more"></a>
+<p>原创文章版权归原作者所有，商业转载请联系原作者获取授权，任何转载请注明来源：<a href="https://xupifu.github.io/2017/03/20/data-interchange-format/">https://xupifu.github.io/2017/03/20/data-interchange-format/</a></p>
+<h2 id="1-概要"><a href="#1-概要" class="headerlink" title="1 概要"></a>1 概要</h2><ul>
+<li><strong>HTML</strong>：是一种基于标签（TAG）的数据格式，但领域特定，是Web服务器和客户端浏览器之间的一种交互手段，很难用在其他应用中。</li>
+<li><strong>XML</strong>：同样是基于TAG的数据格式，很长一段时间以来，作为行业标准，在诸多领域应用广泛，如RPC远程调用，序列化，配置文件，UI模板定义等，其自解释能力非常强，但同时也意味着冗余信息较多，对于需要高性能交互的应用，过多的冗余信息则成了缺点。</li>
+<li><strong>JSON</strong>：基于Name-Value（也称为Key-Value）的数据交换格式，在保持可读性的同时，较大程度减少了冗余信息。JSON原生自Javascript，由于规则简单，非常便于各种编程语言的解析和生成。近些年，在很多领域已经逐渐取代XML，成为了新的数据交换的标准。同时，一些新的技术领域，则直接基于JSON实现，比如一些NoSQL数据库的实现（<strong>MongoDB</strong>等），<strong>RESTful</strong>接口标准等。不过，该数据交换格式不支持注释，可读性有时不如XML。</li>
+<li><strong>YAML</strong>：与JSON类似，采用缩进格式，它进一步减少了冗余信息。不过，由于兼容性问题，目前使用领域还比较有限。</li>
+<li><strong>Protobuf</strong>：是目前冗余信息最少的一种格式，需要专门工具进行生成和解析，生成的内容不具备可读性，但其高性能的优势，使得该数据格式成为了一些特定领域的理想选择。</li>
+</ul>
+<h2 id="2-数据交换格式"><a href="#2-数据交换格式" class="headerlink" title="2 数据交换格式"></a>2 数据交换格式</h2><h3 id="2-1-HTML"><a href="#2-1-HTML" class="headerlink" title="2.1 HTML"></a>2.1 HTML</h3><p>HTML：超文本标记语言（HyperText Markup Language）是一种用于描述和创建网页的标准标记语言。HTML运行在浏览器上，由浏览器来解析。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;head&gt;</div><div class="line">    &lt;meta charset=&quot;UTF-8&quot;&gt;</div><div class="line">    &lt;title&gt;Title&lt;/title&gt;</div><div class="line">    &lt;script src=&quot;js/jquery-3.1.1.min.js&quot;&gt;&lt;/script&gt;</div><div class="line">&lt;/head&gt;</div><div class="line">&lt;body&gt;</div><div class="line"></div><div class="line">&lt;h1&gt;Head&lt;/h1&gt;</div><div class="line"></div><div class="line">&lt;/body&gt;</div><div class="line">&lt;/html&gt;</div></pre></td></tr></table></figure>
+<h3 id="2-2-XML"><a href="#2-2-XML" class="headerlink" title="2.2 XML"></a>2.2 XML</h3><p>XML：可扩展标记语言（eXtensible Markup Language），被设计用来传输和存储数据。在大多数Web应用程序中，XML用于传输数据，而HTML用于格式化并显示数据。但XML不仅仅用于Web应用，由于XML能有效地表示结构化数据，使得XML已经成为计算机软件领域数据交换的标准技术模式之一。通过XML实现数据的标准化、结构化，解决了在不同平台、不同系统之间的数据结构/模式的差异，使得数据层在XML技术的支持下统一起来。</p>
+<p>XML实例（来自维基百科）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">&lt;person&gt;</div><div class="line">  &lt;firstName&gt;John&lt;/firstName&gt;</div><div class="line">  &lt;lastName&gt;Smith&lt;/lastName&gt;</div><div class="line">  &lt;age&gt;25&lt;/age&gt;</div><div class="line">  &lt;address&gt;</div><div class="line">    &lt;streetAddress&gt;21 2nd Street&lt;/streetAddress&gt;</div><div class="line">    &lt;city&gt;New York&lt;/city&gt;</div><div class="line">    &lt;state&gt;NY&lt;/state&gt;</div><div class="line">    &lt;postalCode&gt;10021&lt;/postalCode&gt;</div><div class="line">  &lt;/address&gt;</div><div class="line">  &lt;phoneNumbers&gt;</div><div class="line">    &lt;phoneNumber&gt;</div><div class="line">      &lt;type&gt;home&lt;/type&gt;</div><div class="line">      &lt;number&gt;212 555-1234&lt;/number&gt;</div><div class="line">    &lt;/phoneNumber&gt;</div><div class="line">    &lt;phoneNumber&gt;</div><div class="line">      &lt;type&gt;fax&lt;/type&gt;</div><div class="line">      &lt;number&gt;646 555-4567&lt;/number&gt;</div><div class="line">    &lt;/phoneNumber&gt;</div><div class="line">  &lt;/phoneNumbers&gt;</div><div class="line">  &lt;gender&gt;</div><div class="line">    &lt;type&gt;male&lt;/type&gt;</div><div class="line">  &lt;/gender&gt;</div><div class="line">&lt;/person&gt;</div></pre></td></tr></table></figure>
+<p>XML：使用attribute代替tag（来自维基百科）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;person firstName=&quot;John&quot; lastName=&quot;Smith&quot; age=&quot;25&quot;&gt;</div><div class="line">  &lt;address streetAddress=&quot;21 2nd Street&quot; city=&quot;New York&quot; state=&quot;NY&quot; postalCode=&quot;10021&quot; /&gt;</div><div class="line">  &lt;phoneNumbers&gt;</div><div class="line">    &lt;phoneNumber type=&quot;home&quot; number=&quot;212 555-1234&quot;/&gt;</div><div class="line">    &lt;phoneNumber type=&quot;fax&quot; number=&quot;646 555-4567&quot;/&gt;</div><div class="line">  &lt;/phoneNumbers&gt;</div><div class="line">  &lt;gender type=&quot;male&quot;/&gt;</div><div class="line">&lt;/person&gt;</div></pre></td></tr></table></figure>
+<h3 id="2-3-JSON"><a href="#2-3-JSON" class="headerlink" title="2.3 JSON"></a>2.3 JSON</h3><p>JSON(JavaScript Object Notation)是一种轻量级的数据交换格式。易于人阅读和编写。同时也易于机器解析和生成。它基于<a href="http://www.crockford.com/javascript" target="_blank" rel="external">JavaScript Programming Language</a>, <a href="http://www.ecma-international.org/publications/files/ecma-st/ECMA-262.pdf" target="_blank" rel="external">Standard ECMA-262 3rd Edition - December 1999</a>的一个子集。JSON采用完全独立于语言的文本格式，但是也使用了类似于C语言家族的习惯（包括C, C++, C#, Java, JavaScript, Perl, Python等）。这些特性使JSON成为理想的数据交换语言。</p>
+<p>JSON建构于两种结构：</p>
+<ul>
+<li>“名称/值”对的集合（A collection of name/value pairs）。不同的语言中，它被理解为对象（object），纪录（record），结构（struct），字典（dictionary），哈希表（hash table），有键列表（keyed list），或者关联数组（associative array）。</li>
+<li>值的有序列表（An ordered list of values）。在大部分语言中，它被理解为数组（array）。</li>
+</ul>
+<blockquote>
+<p>【<a href="https://xupifu.github.io">蚍蜉</a>】注：以上说明来自官网：<a href="http://www.json.org/json-zh.html" target="_blank" rel="external">http://www.json.org/json-zh.html</a></p>
+</blockquote>
+<p>其中，值的基础类型一般为字符串（String），数值（Number），布尔值（Boolean）等。</p>
+<p>JSON规则相对简单：</p>
+<ul>
+<li><strong>单一映射</strong>用”:”分隔，即”名称/值”对</li>
+<li><strong>并列的映射/数据</strong>用”,”分隔</li>
+<li><strong>有序列表</strong>用”[]”表示</li>
+<li><strong>映射集合</strong>用”{}”表示</li>
+</ul>
+<p>理论上，所有的数据结构均可以使用该规则进行定义。</p>
+<p>JSON实例（来自维基百科）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &quot;firstName&quot;: &quot;John&quot;,</div><div class="line">  &quot;lastName&quot;: &quot;Smith&quot;,</div><div class="line">  &quot;age&quot;: 25,</div><div class="line">  &quot;address&quot;: &#123;</div><div class="line">    &quot;streetAddress&quot;: &quot;21 2nd Street&quot;,</div><div class="line">    &quot;city&quot;: &quot;New York&quot;,</div><div class="line">    &quot;state&quot;: &quot;NY&quot;,</div><div class="line">    &quot;postalCode&quot;: &quot;10021&quot;</div><div class="line">  &#125;,</div><div class="line">  &quot;phoneNumber&quot;: [</div><div class="line">    &#123;</div><div class="line">      &quot;type&quot;: &quot;home&quot;,</div><div class="line">      &quot;number&quot;: &quot;212 555-1234&quot;</div><div class="line">    &#125;,</div><div class="line">    &#123;</div><div class="line">      &quot;type&quot;: &quot;fax&quot;,</div><div class="line">      &quot;number&quot;: &quot;646 555-4567&quot;</div><div class="line">    &#125;</div><div class="line">  ],</div><div class="line">  &quot;gender&quot;: &#123;</div><div class="line">    &quot;type&quot;: &quot;male&quot;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="2-4-YAML"><a href="#2-4-YAML" class="headerlink" title="2.4 YAML"></a>2.4 YAML</h3><p>YAML：YAML Ain’t Markup Language，采用缩进方式，是一种人们可以轻松阅读的数据序列化格式，并且非常适合对动态编程语言中使用的数据类型进行编码，可以用作数据序列化，配置文件，log文件，Internet信息和过滤等。不过，由于标准化带来的兼容性问题，不同语言间的数据交换不建议使用YAML。</p>
+<p>YAML实例（来自维基百科）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">---</div><div class="line">firstName: John</div><div class="line">lastName: Smith</div><div class="line">age: 25</div><div class="line">address: </div><div class="line">  streetAddress: 21 2nd Street</div><div class="line">  city: New York</div><div class="line">  state: NY</div><div class="line">  postalCode: &apos;10021&apos;</div><div class="line">phoneNumber: </div><div class="line">- type: home</div><div class="line">  number: 212 555-1234</div><div class="line">- type: fax</div><div class="line">  number: 646 555-4567</div><div class="line">gender: </div><div class="line">  type: male</div></pre></td></tr></table></figure>
+<h3 id="2-5-Protobuf"><a href="#2-5-Protobuf" class="headerlink" title="2.5 Protobuf"></a>2.5 Protobuf</h3><p>Protobuf：Google Protocol Buffer是Google公司内部的混合语言数据标准，Protocol Buffers是一种轻便高效的结构化数据存储格式，可以用于结构化数据序列化。它很适合做数据存储或RPC数据交换格式。可用于通讯协议、数据存储等领域的语言无关、平台无关、可扩展的序列化结构数据格式。</p>
+<p>ProtoBuf实例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">package lm; </div><div class="line">message helloworld </div><div class="line">&#123; </div><div class="line">  required int32  id  = 1;</div><div class="line">  required string str = 2;</div><div class="line">  optional int32  opt = 3;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><ol>
+<li><a href="https://en.wikipedia.org/wiki/XML" target="_blank" rel="external">维基百科：XML</a></li>
+<li><a href="https://en.wikipedia.org/wiki/JSON" target="_blank" rel="external">维基百科：JSON</a></li>
+<li><a href="http://www.json.org/json-zh.html" target="_blank" rel="external">JSON介绍</a></li>
+<li><a href="http://www.ibm.com/developerworks/cn/linux/l-cn-gpb/index.html" target="_blank" rel="external">ProtoBuf介绍</a></li>
+</ol>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+
+      
+        
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/02/26/performance-analysis-of-NVMe-SSDs-on-db/" rel="next" title="Performance Analysis of NVMe SSDs and their Implication on Real World Databases">
+                <i class="fa fa-chevron-left"></i> Performance Analysis of NVMe SSDs and their Implication on Real World Databases
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/04/08/distributed-storage-system-topics/" rel="prev" title="分布式存储系统设计的几个问题和考虑点">
+                分布式存储系统设计的几个问题和考虑点 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="蚍蜉" />
+          <p class="site-author-name" itemprop="name">蚍蜉</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+          
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">8</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-概要"><span class="nav-text">1 概要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-数据交换格式"><span class="nav-text">2 数据交换格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-HTML"><span class="nav-text">2.1 HTML</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-XML"><span class="nav-text">2.2 XML</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-JSON"><span class="nav-text">2.3 JSON</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-YAML"><span class="nav-text">2.4 YAML</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-Protobuf"><span class="nav-text">2.5 Protobuf</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#附录"><span class="nav-text">附录</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017 - 至今 </span>
+  <span class="author" itemprop="copyrightHolder">版权所有，任何转载请注明来源，商业转载请联系作者 [蚍蜉] </span>
+</div>
+
+
+        
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+    
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+  
+
+</body>
+</html>
